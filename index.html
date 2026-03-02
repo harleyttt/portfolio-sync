@@ -1,752 +1,891 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-  <meta name="apple-mobile-web-app-capable" content="yes"/>
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-  <meta name="apple-mobile-web-app-title" content="PortfolioSync"/>
-  <meta name="theme-color" content="#0A0B0F"/>
-  <title>PortfolioSync</title>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<meta name="apple-mobile-web-app-title" content="PortfolioSync"/>
+<meta name="theme-color" content="#6264A7"/>
+<title>PortfolioSync</title>
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%236264A7'/%3E%3Ctext x='50' y='66' font-size='48' text-anchor='middle' fill='white'%3E%24%3C/text%3E%3C/svg%3E"/>
+<style>
+/* ── Teams Design Tokens ─────────────────────────────────────── */
+:root {
+  /* Teams palette */
+  --teams-purple:     #6264A7;
+  --teams-purple-dk:  #464775;
+  --teams-purple-lt:  #E8EAF6;
+  --teams-purple-bg:  #F0F0FA;
+  --teams-blue:       #106EBE;
+  --teams-blue-lt:    #DEECF9;
 
-  <!-- PWA icon (inline SVG as data URI) -->
-  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230A0B0F'/%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%237C3AED'/%3E%3Cstop offset='1' stop-color='%233B82F6'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ctext x='50' y='68' font-size='52' text-anchor='middle' fill='url(%23g)'%3E◈%3C/text%3E%3C/svg%3E"/>
+  /* Surfaces */
+  --bg:           #F5F5F7;
+  --surface:      #FFFFFF;
+  --surface2:     #F8F8FC;
+  --surface3:     #EDEDF5;
+  --header-bg:    #6264A7;
 
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;600&display=swap');
+  /* Text */
+  --text:         #242424;
+  --text2:        #616161;
+  --text3:        #9E9E9E;
+  --text-on-hdr:  #FFFFFF;
 
-    :root {
-      --bg: #0A0B0F;
-      --surface: #13151C;
-      --border: #1E2130;
-      --muted: #0D0E15;
-      --text: #E2E8F0;
-      --sub: #64748B;
-      --faint: #475569;
-      --pos: #22c55e;
-      --neg: #ef4444;
-      --purple: #7C3AED;
-      --green: #059669;
-      --red: #DC2626;
-      --accent: #A78BFA;
-      --safe-top: env(safe-area-inset-top, 0px);
-      --safe-bot: env(safe-area-inset-bottom, 0px);
-    }
+  /* Semantic */
+  --green:        #107C10;
+  --green-bg:     #DFF6DD;
+  --red:          #C4314B;
+  --red-bg:       #FCE4E8;
+  --orange:       #7A5A00;
+  --orange-bg:    #FFF4CE;
+  --blue:         #106EBE;
+  --blue-bg:      #DEECF9;
 
-    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  /* Borders & shadows */
+  --border:       #E0E0E0;
+  --shadow-sm:    0 1px 4px rgba(0,0,0,.10), 0 0 1px rgba(0,0,0,.06);
+  --shadow-md:    0 2px 8px rgba(0,0,0,.12), 0 0 2px rgba(0,0,0,.06);
+  --radius:       12px;
+  --radius-sm:    8px;
 
-    html, body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: 'DM Sans', 'Segoe UI', sans-serif;
-      height: 100%;
-      overflow: hidden;
-    }
+  /* Safe areas */
+  --safe-t: env(safe-area-inset-top,    47px);
+  --safe-b: env(safe-area-inset-bottom, 34px);
+}
 
-    #app {
-      display: flex;
-      flex-direction: column;
-      height: 100dvh;
-      max-width: 480px;
-      margin: 0 auto;
-    }
+/* ── Reset ───────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+html, body { height:100%; overflow:hidden; background:var(--bg); }
+body {
+  color:var(--text);
+  font-family:-apple-system,'Segoe UI','Helvetica Neue',sans-serif;
+  font-size:15px;
+  -webkit-font-smoothing:antialiased;
+}
 
-    /* ── Header ── */
-    .header {
-      background: #0D0E15;
-      border-bottom: 1px solid var(--border);
-      padding: calc(var(--safe-top) + 12px) 20px 12px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-shrink: 0;
-    }
-    .logo { display: flex; align-items: center; gap: 9px; }
-    .logo-icon {
-      width: 30px; height: 30px;
-      background: linear-gradient(135deg, #7C3AED, #3B82F6);
-      border-radius: 9px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 15px;
-    }
-    .logo-text { font-weight: 700; font-size: 15px; letter-spacing: -0.02em; }
-    .loaded-badge { font-size: 12px; color: var(--sub); }
+/* ── Shell ───────────────────────────────────────────────────── */
+#app { display:flex; flex-direction:column; height:100dvh; }
 
-    /* ── Bottom Nav ── */
-    .bottom-nav {
-      background: #0D0E15;
-      border-top: 1px solid var(--border);
-      display: flex;
-      padding-bottom: var(--safe-bot);
-      flex-shrink: 0;
-    }
-    .nav-item {
-      flex: 1; display: flex; flex-direction: column;
-      align-items: center; gap: 3px;
-      padding: 10px 0;
-      cursor: pointer; border: none; background: none; color: var(--sub);
-      font-size: 10px; font-weight: 600; letter-spacing: 0.04em;
-      transition: color 0.15s;
-    }
-    .nav-item.active { color: var(--accent); }
-    .nav-icon { font-size: 20px; line-height: 1; }
+/* ── Header ──────────────────────────────────────────────────── */
+.app-header {
+  background:var(--header-bg);
+  padding-top:var(--safe-t);
+  flex-shrink:0;
+  box-shadow:0 2px 8px rgba(98,100,167,.35);
+  position:relative; z-index:10;
+}
+.app-header-inner {
+  height:52px; display:flex; align-items:center; justify-content:space-between;
+  padding:0 16px;
+}
+.app-header-logo { display:flex; align-items:center; gap:10px; }
+.app-header-icon {
+  width:34px; height:34px; border-radius:9px;
+  background:rgba(255,255,255,.2);
+  display:flex; align-items:center; justify-content:center;
+  font-size:18px; font-weight:700; color:#fff;
+}
+.app-header-title { font-size:18px; font-weight:700; color:#fff; letter-spacing:-.01em; }
+.app-header-badge {
+  background:rgba(255,255,255,.18);
+  color:#fff; font-size:12px; font-weight:600;
+  padding:4px 10px; border-radius:20px;
+}
 
-    /* ── Scroll area ── */
-    .scroll-area {
-      flex: 1;
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
+/* ── Tab Bar ─────────────────────────────────────────────────── */
+.tab-bar {
+  display:flex; background:var(--surface);
+  border-top:1px solid var(--border);
+  padding-bottom:var(--safe-b);
+  flex-shrink:0;
+  box-shadow:0 -1px 4px rgba(0,0,0,.06);
+}
+.tab-btn {
+  flex:1; display:flex; flex-direction:column; align-items:center;
+  gap:3px; padding:9px 0 4px;
+  border:none; background:none; cursor:pointer;
+  color:var(--text3); font-size:11px; font-weight:500; letter-spacing:.01em;
+  transition:color .15s;
+}
+.tab-btn.active { color:var(--teams-purple); }
+.tab-btn.active .tab-icon-wrap { background:var(--teams-purple-bg); }
+.tab-icon-wrap {
+  width:32px; height:28px; border-radius:14px;
+  display:flex; align-items:center; justify-content:center;
+  transition:background .15s; margin-bottom:1px;
+}
+.tab-icon { font-size:18px; line-height:1; }
 
-    /* ── Cards ── */
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 18px;
-    }
-    .card-title {
-      font-size: 11px; font-weight: 700; color: var(--sub);
-      letter-spacing: 0.07em; margin-bottom: 14px;
-    }
+/* ── Scroll ──────────────────────────────────────────────────── */
+.content {
+  flex:1; overflow-y:auto; overflow-x:hidden;
+  -webkit-overflow-scrolling:touch;
+  background:var(--bg);
+}
 
-    /* ── Stat chips ── */
-    .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .stat-chip {
-      background: var(--muted); border-radius: 12px; padding: 14px;
-    }
-    .stat-label { font-size: 11px; color: var(--sub); margin-bottom: 4px; }
-    .stat-value { font-size: 20px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
-    .stat-sub { font-size: 11px; color: var(--faint); margin-top: 3px; }
+/* ── Page wrapper ────────────────────────────────────────────── */
+.page { padding-bottom:24px; }
+.page-title { font-size:24px; font-weight:700; color:var(--text); letter-spacing:-.02em; padding:20px 16px 4px; }
+.page-sub   { font-size:14px; color:var(--text2); padding:0 16px 20px; line-height:1.5; }
 
-    /* ── Platform card ── */
-    .platform-card {
-      border-radius: 14px; padding: 14px 16px;
-      background: var(--muted);
-      border-left: 3px solid transparent;
-      cursor: pointer;
-      margin-bottom: 10px;
-    }
-    .platform-card:last-child { margin-bottom: 0; }
-    .platform-header { display: flex; justify-content: space-between; align-items: flex-start; }
-    .platform-name { display: flex; align-items: center; gap: 7px; font-weight: 700; font-size: 15px; }
-    .platform-sub { font-size: 11px; color: var(--sub); margin-top: 2px; }
-    .platform-value { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 18px; text-align: right; }
-    .platform-cad { font-size: 11px; color: var(--faint); text-align: right; }
+/* ── Section ─────────────────────────────────────────────────── */
+.section-label {
+  font-size:12px; font-weight:600; color:var(--teams-purple);
+  text-transform:uppercase; letter-spacing:.08em;
+  padding:20px 16px 8px;
+}
 
-    .acct-row {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 9px 0; border-top: 1px solid var(--border);
-    }
-    .acct-name { font-weight: 600; font-size: 13px; }
-    .acct-pos { font-size: 11px; color: var(--sub); margin-top: 1px; }
-    .acct-bal { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 14px; }
+/* ── Card ────────────────────────────────────────────────────── */
+.card {
+  margin:0 16px;
+  background:var(--surface);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow-sm);
+  overflow:hidden;
+}
+.card + .card { margin-top:10px; }
 
-    /* ── Tags ── */
-    .tag {
-      display: inline-block; padding: 2px 7px; border-radius: 6px;
-      font-size: 10px; font-weight: 700;
-    }
+/* ── Platform header inside card ─────────────────────────────── */
+.platform-header {
+  display:flex; align-items:center; gap:12px;
+  padding:14px 16px; border-bottom:1px solid var(--border);
+}
+.platform-icon {
+  width:40px; height:40px; border-radius:10px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:20px; flex-shrink:0;
+}
+.platform-title { font-size:16px; font-weight:600; color:var(--text); }
+.platform-sub   { font-size:13px; color:var(--text2); margin-top:2px; }
+.platform-badge { margin-left:auto; flex-shrink:0; }
 
-    /* ── Holdings table ── */
-    .holding-row {
-      display: flex; align-items: center; padding: 11px 0;
-      border-bottom: 1px solid var(--border); gap: 10px;
-      cursor: default;
-    }
-    .holding-row:last-child { border-bottom: none; }
-    .h-rank { font-size: 11px; color: var(--faint); width: 18px; flex-shrink: 0; }
-    .h-sym { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 14px; flex-shrink: 0; width: 72px; }
-    .h-name { font-size: 12px; color: var(--sub); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .h-right { text-align: right; flex-shrink: 0; }
-    .h-val { font-family: 'JetBrains Mono', monospace; font-weight: 600; font-size: 13px; }
-    .h-gain { font-size: 11px; }
+/* ── Drop zone — clean button, no dashed boxes ───────────────── */
+.drop-zone-wrap { padding:10px 14px; border-bottom:1px solid var(--border); }
+.drop-zone {
+  border:none; border-radius:10px;
+  padding:12px 16px; cursor:pointer; position:relative;
+  background:var(--teams-purple-lt);
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  transition:background .15s;
+}
+.drop-zone:active { background:var(--surface3); }
+.drop-zone input  { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+.drop-zone-icon   { font-size:18px; line-height:1; }
+.drop-zone-text   { font-size:14px; font-weight:600; color:var(--teams-purple); }
+.drop-zone-sub    { display:none; }
 
-    /* ── Sort bar ── */
-    .sort-bar { display: flex; gap: 6px; margin-bottom: 14px; }
-    .sort-btn {
-      flex: 1; padding: 8px; border-radius: 9px; border: 1px solid var(--border);
-      background: none; color: var(--sub); font-size: 12px; font-weight: 600;
-      cursor: pointer; transition: all 0.15s;
-    }
-    .sort-btn.active { background: var(--border); color: var(--text); }
+/* ── Import status ───────────────────────────────────────────── */
+.import-status { padding:6px 16px 0; font-size:13px; font-weight:500; }
 
-    /* ── Donut ── */
-    .donut-wrap { display: flex; justify-content: center; margin-bottom: 14px; }
-    .legend-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-    .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-    .legend-label { font-size: 13px; display: flex; align-items: center; gap: 7px; }
-    .legend-pct { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 600; }
+/* ── File list ───────────────────────────────────────────────── */
+.file-list { padding:8px 14px; border-bottom:1px solid var(--border); display:flex; flex-direction:column; gap:6px; }
+.file-row {
+  display:flex; align-items:center; gap:10px;
+  background:var(--surface2); border-radius:8px; padding:9px 12px;
+}
+.file-icon { font-size:18px; flex-shrink:0; }
+.file-name { flex:1; font-size:13px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.file-accts { font-size:12px; color:var(--text2); margin-top:1px; }
+.file-remove {
+  width:22px; height:22px; border-radius:11px;
+  background:var(--border); border:none; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  color:var(--text2); font-size:12px; flex-shrink:0;
+}
 
-    /* ── Import ── */
-    .import-platform { border-top: 3px solid transparent; }
-    .drop-zone {
-      border: 2px dashed var(--border); border-radius: 12px;
-      padding: 20px; text-align: center; cursor: pointer;
-      background: var(--muted); transition: all 0.15s;
-      position: relative;
-    }
-    .drop-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
-    .drop-zone.drag { border-color: var(--purple); background: #7C3AED15; }
-    .drop-icon { font-size: 28px; margin-bottom: 6px; }
-    .drop-text { font-weight: 600; font-size: 14px; color: var(--sub); }
-    .drop-sub { font-size: 12px; color: var(--faint); margin-top: 3px; }
-    .import-status { margin-top: 8px; font-size: 13px; font-weight: 500; }
+/* ── Account rows ────────────────────────────────────────────── */
+.acct-rows { padding:4px 0; border-bottom:1px solid var(--border); }
+.acct-row {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:10px 16px;
+}
+.acct-row + .acct-row { border-top:1px solid var(--border); }
+.acct-name  { font-size:14px; font-weight:500; color:var(--text); }
+.acct-pos   { font-size:12px; color:var(--text3); margin-top:1px; }
+.acct-bal   { font-size:15px; font-weight:600; font-variant-numeric:tabular-nums; text-align:right; }
+.acct-sub   { font-size:11px; color:var(--text3); text-align:right; margin-top:1px; }
 
-    .guide-box {
-      margin-top: 12px; background: var(--muted);
-      border-radius: 10px; padding: 12px 14px;
-    }
-    .guide-title { font-size: 10px; font-weight: 700; color: var(--faint); letter-spacing: 0.08em; margin-bottom: 7px; }
-    .guide-box ol { padding-left: 16px; }
-    .guide-box li { font-size: 12px; color: var(--sub); line-height: 1.9; }
+/* ── How-to guide ────────────────────────────────────────────── */
+.guide { padding:12px 16px 14px; }
+.guide-title { font-size:11px; font-weight:700; color:var(--text3); text-transform:uppercase; letter-spacing:.07em; margin-bottom:8px; }
+.guide ol   { padding-left:18px; }
+.guide li   { font-size:13px; color:var(--text2); line-height:1.85; }
 
-    .imported-list { margin-top: 10px; }
-    .imported-row {
-      display: flex; justify-content: space-between; font-size: 13px;
-      padding: 6px 0; border-top: 1px solid var(--border);
-    }
-    .imported-name { color: var(--sub); }
+/* ── CTA ─────────────────────────────────────────────────────── */
+.cta { margin:20px 16px 0; }
+.cta-btn {
+  width:100%; padding:15px;
+  background:var(--teams-purple); color:#fff;
+  border:none; border-radius:var(--radius);
+  font-size:16px; font-weight:600; cursor:pointer;
+  box-shadow:0 2px 8px rgba(98,100,167,.4);
+  letter-spacing:-.01em; transition:background .15s;
+}
+.cta-btn:active { background:var(--teams-purple-dk); }
 
-    /* ── Empty state ── */
-    .empty {
-      text-align: center; padding: 60px 20px;
-    }
-    .empty-icon { font-size: 48px; margin-bottom: 14px; }
-    .empty-title { font-size: 17px; font-weight: 600; margin-bottom: 6px; }
-    .empty-sub { font-size: 14px; color: var(--sub); margin-bottom: 22px; }
-    .btn-primary {
-      display: inline-block; background: var(--purple);
-      color: white; padding: 12px 28px; border-radius: 12px;
-      font-weight: 700; font-size: 15px; border: none; cursor: pointer;
-    }
+/* ── Badge / pill ────────────────────────────────────────────── */
+.badge {
+  display:inline-flex; align-items:center;
+  padding:3px 9px; border-radius:20px;
+  font-size:12px; font-weight:600;
+}
+.badge-green  { background:var(--green-bg);  color:var(--green);  }
+.badge-red    { background:var(--red-bg);    color:var(--red);    }
+.badge-blue   { background:var(--blue-bg);   color:var(--blue);   }
+.badge-orange { background:var(--orange-bg); color:var(--orange); }
+.badge-purple { background:var(--teams-purple-lt); color:var(--teams-purple-dk); }
+.cur-tag {
+  font-size:10px; font-weight:700; padding:1px 5px; border-radius:4px; margin-left:5px; vertical-align:middle;
+}
 
-    /* ── Utilities ── */
-    .pos { color: var(--pos); }
-    .neg { color: var(--neg); }
-    .mono { font-family: 'JetBrains Mono', monospace; }
-    .section-label {
-      font-size: 11px; font-weight: 700; color: var(--sub);
-      letter-spacing: 0.08em; margin-bottom: 10px; padding-left: 2px;
-    }
+/* ── Overview hero ───────────────────────────────────────────── */
+.hero-card {
+  margin:12px 16px 0;
+  background:var(--header-bg);
+  border-radius:var(--radius);
+  padding:20px;
+  box-shadow:var(--shadow-md);
+}
+.hero-label { font-size:13px; color:rgba(255,255,255,.7); margin-bottom:4px; font-weight:500; }
+.hero-value { font-size:38px; font-weight:700; color:#fff; letter-spacing:-.03em; font-variant-numeric:tabular-nums; line-height:1.05; }
+.hero-row   { display:flex; align-items:center; gap:8px; margin-top:8px; }
+.hero-sub   { font-size:13px; color:rgba(255,255,255,.65); }
 
-    /* ── Progress bar ── */
-    .bar-wrap { background: var(--border); border-radius: 4px; height: 5px; margin-top: 4px; }
-    .bar-fill { height: 100%; border-radius: 4px; transition: width 0.4s; }
+/* ── Stats strip ─────────────────────────────────────────────── */
+.stats-strip { display:flex; gap:10px; margin:10px 16px 0; }
+.stat-tile {
+  flex:1; background:var(--surface); border-radius:var(--radius-sm);
+  padding:12px; box-shadow:var(--shadow-sm);
+}
+.stat-label { font-size:11px; color:var(--text3); font-weight:500; margin-bottom:3px; }
+.stat-value { font-size:19px; font-weight:700; font-variant-numeric:tabular-nums; letter-spacing:-.02em; }
+.stat-sub   { font-size:11px; color:var(--text3); margin-top:2px; }
 
-    /* Top 5 card */
-    .top5-row {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 9px 0; border-bottom: 1px solid var(--border);
-    }
-    .top5-row:last-child { border-bottom: none; }
-  </style>
+/* ── Donut card ──────────────────────────────────────────────── */
+.donut-card {
+  margin:10px 16px 0;
+  background:var(--surface);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow-sm);
+  padding:16px;
+}
+.donut-card-title { font-size:14px; font-weight:600; color:var(--text); margin-bottom:14px; }
+.donut-layout { display:flex; align-items:center; gap:16px; }
+.donut-legend { flex:1; }
+.donut-leg    { margin-bottom:10px; }
+.donut-leg:last-child { margin-bottom:0; }
+.donut-leg-row { display:flex; align-items:center; gap:8px; margin-bottom:4px; }
+.donut-leg-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+.donut-leg-name { flex:1; font-size:13px; color:var(--text); }
+.donut-leg-pct  { font-size:13px; font-weight:600; color:var(--text2); font-variant-numeric:tabular-nums; }
+.donut-bar { height:4px; border-radius:2px; background:var(--border); }
+.donut-bar-fill { height:100%; border-radius:2px; }
+
+/* ── Platform rows (overview) ────────────────────────────────── */
+.platform-row {
+  display:flex; align-items:center; padding:13px 16px; gap:12px;
+  cursor:pointer; transition:background .1s;
+}
+.platform-row:active { background:var(--bg); }
+.platform-row + .platform-row { border-top:1px solid var(--border); }
+.pl-icon { width:36px; height:36px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+.pl-body { flex:1; min-width:0; }
+.pl-name { font-size:15px; font-weight:600; color:var(--text); }
+.pl-detail { font-size:12px; color:var(--text2); margin-top:2px; }
+.pl-right { text-align:right; }
+.pl-value { font-size:15px; font-weight:600; font-variant-numeric:tabular-nums; }
+.pl-sub   { font-size:12px; color:var(--text3); margin-top:1px; font-variant-numeric:tabular-nums; }
+.chevron  { color:var(--text3); font-size:12px; margin-left:6px; flex-shrink:0; transition:transform .2s; }
+.chevron.open { transform:rotate(180deg); }
+
+.sub-acct-row {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:10px 16px 10px 64px; border-top:1px solid var(--border);
+  background:var(--surface2);
+}
+.sub-acct-name  { font-size:14px; color:var(--text); }
+.sub-acct-right { text-align:right; }
+.sub-acct-val   { font-size:14px; font-weight:500; font-variant-numeric:tabular-nums; }
+.sub-acct-sub   { font-size:11px; color:var(--text3); margin-top:1px; }
+
+/* ── Top holdings card ───────────────────────────────────────── */
+.holding-row {
+  display:flex; align-items:center; padding:11px 16px; gap:12px;
+  position:relative;
+}
+.holding-row+.holding-row::before {
+  content:''; position:absolute; top:0; left:16px; right:0; height:1px; background:var(--border);
+}
+.h-num  { width:22px; flex-shrink:0; font-size:12px; color:var(--text3); text-align:center; font-variant-numeric:tabular-nums; }
+.h-sym  { width:58px; flex-shrink:0; font-size:14px; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.h-name { flex:1; font-size:13px; color:var(--text2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
+.h-right { text-align:right; flex-shrink:0; }
+.h-val  { font-size:14px; font-weight:600; font-variant-numeric:tabular-nums; }
+.h-pct  { font-size:12px; margin-top:1px; font-variant-numeric:tabular-nums; }
+
+/* ── Holdings page ───────────────────────────────────────────── */
+.seg-row { display:flex; gap:6px; margin:12px 16px 0; }
+.seg-btn {
+  flex:1; padding:8px 4px; border-radius:8px;
+  border:1.5px solid var(--border);
+  background:var(--surface); color:var(--text2);
+  font-size:13px; font-weight:500; cursor:pointer; transition:all .15s;
+}
+.seg-btn.active {
+  background:var(--teams-purple-lt); color:var(--teams-purple-dk);
+  border-color:var(--teams-purple); font-weight:700;
+}
+
+/* ── Empty ───────────────────────────────────────────────────── */
+.empty { padding:70px 32px; text-align:center; }
+.empty-icon { font-size:52px; margin-bottom:16px; }
+.empty-title { font-size:20px; font-weight:700; margin-bottom:8px; letter-spacing:-.02em; }
+.empty-body  { font-size:14px; color:var(--text2); line-height:1.5; margin-bottom:24px; }
+.empty-btn {
+  display:inline-block; background:var(--teams-purple); color:#fff;
+  padding:13px 28px; border-radius:12px;
+  font-size:16px; font-weight:600; border:none; cursor:pointer;
+}
+
+/* ── Utils ───────────────────────────────────────────────────── */
+.pos { color:var(--green); }
+.neg { color:var(--red);   }
+.mono { font-variant-numeric:tabular-nums; }
+</style>
 </head>
 <body>
 <div id="app">
-  <div class="header">
-    <div class="logo">
-      <div class="logo-icon">◈</div>
-      <span class="logo-text">PortfolioSync</span>
+  <!-- Header -->
+  <div class="app-header">
+    <div class="app-header-inner">
+      <div class="app-header-logo">
+        <div class="app-header-icon">$</div>
+        <div class="app-header-title">PortfolioSync</div>
+      </div>
+      <div class="app-header-badge" id="loaded-badge">0 / 3</div>
     </div>
-    <span class="loaded-badge" id="loaded-badge">0/3 loaded</span>
   </div>
 
-  <div class="scroll-area" id="main-content"></div>
+  <!-- Content -->
+  <div class="content" id="main-content"></div>
 
-  <nav class="bottom-nav">
-    <button class="nav-item active" id="nav-import" onclick="setView('import')">
-      <span class="nav-icon">📥</span>IMPORT
+  <!-- Tab bar -->
+  <nav class="tab-bar">
+    <button class="tab-btn active" id="nav-import" onclick="setView('import')">
+      <div class="tab-icon-wrap"><span class="tab-icon">⬇</span></div>
+      Import
     </button>
-    <button class="nav-item" id="nav-overview" onclick="setView('overview')">
-      <span class="nav-icon">📊</span>OVERVIEW
+    <button class="tab-btn" id="nav-overview" onclick="setView('overview')">
+      <div class="tab-icon-wrap"><span class="tab-icon">◎</span></div>
+      Overview
     </button>
-    <button class="nav-item" id="nav-holdings" onclick="setView('holdings')">
-      <span class="nav-icon">📋</span>HOLDINGS
+    <button class="tab-btn" id="nav-holdings" onclick="setView('holdings')">
+      <div class="tab-icon-wrap"><span class="tab-icon">≡</span></div>
+      Holdings
     </button>
   </nav>
 </div>
 
 <script>
-// ── State ──────────────────────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════
+//  CONSTANTS
+// ════════════════════════════════════════════════════════════
 const CAD_TO_USD = 0.74;
-const state = {
-  view: 'import',
-  sortBy: 'value',
-  expand: null,
-  platforms: { fidelity: null, etrade: null, td_canada: null }
-};
 
 const META = {
-  fidelity:  { label: 'Fidelity',       flag: '🇺🇸', color: '#059669', currency: 'USD' },
-  etrade:    { label: 'E*TRADE',        flag: '🇺🇸', color: '#7C3AED', currency: 'USD' },
-  td_canada: { label: 'TD Direct (CA)', flag: '🇨🇦', color: '#DC2626', currency: 'CAD' }
+  fidelity:  { label:'Fidelity',       flag:'🇺🇸', color:'#107C10', bg:'#DFF6DD' },
+  etrade:    { label:'E*TRADE',        flag:'🇺🇸', color:'#6264A7', bg:'#E8EAF6' },
+  td_canada: { label:'TD Direct (CA)', flag:'🇨🇦', color:'#C4314B', bg:'#FCE4E8' }
 };
 
 const GUIDES = {
   fidelity: [
     'Log in → Accounts & Trade → Portfolio',
     'Click the Positions tab',
-    'Click the ⬇ Download icon (top right)',
-    'Save as .CSV'
+    'Click ⬇ Download icon (top-right of page)',
+    'Save as .CSV — repeat for each account'
   ],
   etrade: [
     'Log in → go to Portfolios page',
     'Click Positions tab, select account',
     'Click Download → Collapsed View, All Positions',
-    'Save as .CSV'
+    'Save as .CSV — repeat for each account'
   ],
   td_canada: [
     'Log in to TD WebBroker',
     'Go to Accounts → Account Holdings',
-    'Select account from dropdown',
-    'Scroll down → "Download to: Spreadsheet (.CSV)" → Download'
+    'Select account from the dropdown',
+    'Scroll down → "Download to: Spreadsheet (.CSV)"',
+    'Upload all CSVs here — USD & CAD auto-detected'
   ]
 };
 
-// ── CSV Parsing ────────────────────────────────────────────────────────────
-function parseRows(text) {
-  text = text.replace(/^\uFEFF/, '').trim();
-  return text.split(/\r?\n/).map(line => {
-    const cols = []; let cur = '', inQ = false;
-    for (const c of line) {
-      if (c === '"') inQ = !inQ;
-      else if (c === ',' && !inQ) { cols.push(cur.trim()); cur = ''; }
-      else cur += c;
+const state = {
+  view:'import', sortBy:'value', expand:null,
+  files:{ fidelity:[], etrade:[], td_canada:[] }
+};
+
+// ════════════════════════════════════════════════════════════
+//  CSV HELPERS
+// ════════════════════════════════════════════════════════════
+function parseRows(text){
+  text=text.replace(/^\uFEFF/,'').replace(/\r\n/g,'\n').replace(/\r/g,'\n');
+  return text.split('\n').map(line=>{
+    const cols=[]; let cur='',inQ=false;
+    for(const c of line){
+      if(c==='"') inQ=!inQ;
+      else if(c===','&&!inQ){cols.push(cur.trim());cur='';}
+      else cur+=c;
     }
-    cols.push(cur.trim());
-    return cols;
+    cols.push(cur.trim()); return cols;
   });
 }
-
-function num(s) {
-  if (!s || s === '--' || s === 'n/a') return 0;
-  return parseFloat(String(s).replace(/[$,%\s]/g, '')) || 0;
+function num(s){
+  if(!s||s===''||s==='--'||s==='n/a'||s==='N/A') return 0;
+  return parseFloat(String(s).replace(/[$,%\s]/g,''))||0;
 }
+function findCol(h,ks){ for(const k of [].concat(ks)){const i=h.findIndex(x=>x.includes(k));if(i!==-1)return i;} return -1; }
+function norm(r){ return r.map(h=>h.toLowerCase().replace(/[^a-z0-9]/g,'_')); }
 
-function findCol(hdrs, keywords) {
-  for (const kw of [].concat(keywords)) {
-    const i = hdrs.findIndex(h => h.includes(kw));
-    if (i !== -1) return i;
+// ════════════════════════════════════════════════════════════
+//  PARSERS
+// ════════════════════════════════════════════════════════════
+function parseFidelity(text){
+  const rows=parseRows(text);
+  const hi=rows.findIndex(r=>r.some(c=>/^symbol$/i.test(c.trim()))&&r.some(c=>/account/i.test(c)));
+  if(hi===-1) throw new Error("Can't find header row");
+  const h=norm(rows[hi]);
+  const iAN=findCol(h,['account_number','account_num']),iAName=findCol(h,['account_name']),
+        iSym=findCol(h,['symbol']),iDesc=findCol(h,['description']),
+        iQty=findCol(h,['quantity']),iPx=findCol(h,['last_price']),
+        iVal=findCol(h,['current_value','market_value']),
+        iGain=findCol(h,['total_gain_loss_dollar','total_gain_loss__']);
+  const map={};
+  for(let i=hi+1;i<rows.length;i++){
+    const r=rows[i],sym=(r[iSym]||'').replace(/\*/g,'').trim();
+    if(!sym||/^the data|^brokerage|^date downloaded|^"/i.test(sym)||/^symbol$/i.test(sym)||sym.length>30) continue;
+    const key=iAN!==-1?(r[iAN]||'').trim():'default';
+    const name=iAName!==-1?(r[iAName]||'Account').trim():'Account';
+    if(!map[key]) map[key]={name,currency:'USD',positions:[],balance:0};
+    const v=num(r[iVal]),g=num(r[iGain]);
+    map[key].positions.push({symbol:sym,name:r[iDesc]||sym,shares:num(r[iQty]),price:num(r[iPx]),value:v,gain:g});
+    map[key].balance+=v;
   }
-  return -1;
-}
-
-function norm(row) {
-  return row.map(h => h.toLowerCase().replace(/[^a-z0-9]/g, '_'));
-}
-
-function parseFidelity(text) {
-  const rows = parseRows(text);
-  const hi = rows.findIndex(r => r.some(c => /symbol/i.test(c)));
-  if (hi === -1) throw new Error("No 'Symbol' column found");
-  const hdrs = norm(rows[hi]);
-  const iSym = findCol(hdrs, 'symbol');
-  const iDesc = findCol(hdrs, ['description', 'security_description']);
-  const iQty = findCol(hdrs, ['quantity', 'qty']);
-  const iPrice = findCol(hdrs, ['last_price', 'current_price', 'price']);
-  const iVal = findCol(hdrs, ['current_value', 'market_value', 'value']);
-  const iGain = findCol(hdrs, ['total_gain_loss_dollar', 'total_gain', 'unrealized']);
-  const iAcct = findCol(hdrs, ['account_name', 'account_number']);
-  const map = {};
-  for (let i = hi + 1; i < rows.length; i++) {
-    const r = rows[i];
-    const sym = (r[iSym] || '').replace(/\*/g, '').trim();
-    if (!sym || /total|the data/i.test(sym)) continue;
-    const acct = iAcct !== -1 ? (r[iAcct] || 'My Account') : 'My Account';
-    const value = num(r[iVal]); const gain = num(r[iGain]);
-    if (!map[acct]) map[acct] = { name: acct, positions: [], balance: 0 };
-    map[acct].positions.push({ symbol: sym, name: iDesc !== -1 ? r[iDesc] : sym, shares: num(r[iQty]), price: num(r[iPrice]), value, gain });
-    map[acct].balance += value;
-  }
-  const res = Object.values(map);
-  if (!res.length || res.every(a => !a.positions.length)) throw new Error('No positions found');
+  const res=Object.values(map);
+  if(!res.length||res.every(a=>!a.positions.length)) throw new Error('No positions found');
   return res;
 }
 
-function parseEtrade(text) {
-  const rows = parseRows(text);
-  const hi = rows.findIndex(r => r.some(c => /symbol/i.test(c)));
-  if (hi === -1) throw new Error("No 'Symbol' column found");
-  const hdrs = norm(rows[hi]);
-  const iSym = findCol(hdrs, 'symbol');
-  const iQty = findCol(hdrs, ['quantity', 'qty', 'shares']);
-  const iPrice = findCol(hdrs, ['last_price', 'last', 'price']);
-  const iVal = findCol(hdrs, ['value', 'market_value', 'current_value']);
-  const iGain = findCol(hdrs, ['gain_loss', 'unrealized_gain', 'total_gain']);
-  const iDesc = findCol(hdrs, ['description', 'name', 'security']);
-  const positions = []; let balance = 0;
-  for (let i = hi + 1; i < rows.length; i++) {
-    const r = rows[i];
-    const sym = (r[iSym] || '').trim();
-    if (!sym || /total|account/i.test(sym)) continue;
-    const value = num(r[iVal]); const gain = num(r[iGain]);
-    balance += value;
-    positions.push({ symbol: sym, name: iDesc !== -1 ? r[iDesc] : sym, shares: num(r[iQty]), price: num(r[iPrice]), value, gain });
+function parseEtrade(text){
+  const rows=parseRows(text);
+  const hi=rows.findIndex(r=>{const n=norm(r);return findCol(n,['symbol'])!==-1&&findCol(n,['value'])!==-1&&findCol(n,['quantity','qty'])!==-1;});
+  if(hi===-1) throw new Error("Can't find E*TRADE positions header");
+  const h=norm(rows[hi]);
+  const iSym=findCol(h,['symbol']),iQty=findCol(h,['quantity','qty']),
+        iVal=findCol(h,['value_','value']),iGain=findCol(h,['total_gain_','total_gain','gain_']),
+        iPx=rows[hi].findIndex((_,i)=>rows[hi][i].toLowerCase().includes('last price'));
+  const positions=[]; let balance=0;
+  for(let i=hi+1;i<rows.length;i++){
+    const r=rows[i],sym=(r[iSym]||'').trim();
+    if(!sym||/^total$/i.test(sym)||/^generated/i.test(sym)) continue;
+    if(sym.split(' ').length>5&&!/\d+\.\d+%|\d{2}\/\d{2}\/\d{4}/.test(sym)) continue;
+    const v=num(r[iVal]),g=num(r[iGain]);
+    balance+=v;
+    positions.push({symbol:sym,name:sym==='CASH'?'Cash & Equivalents':sym,shares:num(r[iQty]),price:iPx!==-1?num(r[iPx]):0,value:v,gain:g});
   }
-  if (!positions.length) throw new Error('No positions found');
-  return [{ name: 'Portfolio', positions, balance }];
+  if(!positions.length) throw new Error('No positions found');
+  return [{name:'Brokerage Account',currency:'USD',positions,balance}];
 }
 
-function parseTDCanada(text) {
-  const rows = parseRows(text);
-  const hi = rows.findIndex(r => r.some(c => /symbol|security/i.test(c)));
-  if (hi === -1) throw new Error('No header row found');
-  const hdrs = norm(rows[hi]);
-  const iSym = findCol(hdrs, ['symbol', 'ticker']);
-  const iDesc = findCol(hdrs, ['description', 'security_description', 'name']);
-  const iQty = findCol(hdrs, ['quantity', 'qty', 'shares', 'units']);
-  const iPrice = findCol(hdrs, ['market_price', 'price', 'last']);
-  const iVal = findCol(hdrs, ['market_value', 'current_value', 'value']);
-  const iGain = findCol(hdrs, ['unrealized_gain', 'gain_loss', 'gain']);
-  const positions = []; let balance = 0;
-  for (let i = hi + 1; i < rows.length; i++) {
-    const r = rows[i];
-    const sym = (r[iSym] || '').trim();
-    if (!sym || /total/i.test(sym)) continue;
-    const value = num(r[iVal]); const gain = num(r[iGain]);
-    balance += value;
-    positions.push({ symbol: sym, name: iDesc !== -1 ? r[iDesc] : sym, shares: num(r[iQty]), price: num(r[iPrice]), value, gain });
+function parseTDCanada(text){
+  const rows=parseRows(text),accounts=[]; let i=0;
+  while(i<rows.length){
+    if(rows[i][0]&&/^as of date/i.test(rows[i][0])){
+      let acctName='TD Account',cash=0,j=i+1;
+      while(j<rows.length){
+        const lbl=(rows[j][0]||'').trim().toLowerCase();
+        if(lbl==='account') acctName=(rows[j][1]||'TD Account').trim();
+        if(lbl==='cash')    cash=num(rows[j][1]);
+        if(rows[j].some(c=>/^symbol$/i.test(c.trim()))) break;
+        j++;
+      }
+      const hi=j; if(hi>=rows.length){i=j+1;continue;}
+      const h=norm(rows[hi]);
+      const iSym=findCol(h,['symbol','ticker']),iMkt=findCol(h,['market']),
+            iDesc=findCol(h,['description']),iQty=findCol(h,['quantity','qty','units']),
+            iPx=findCol(h,['price']),iVal=findCol(h,['market_value']),
+            iGain=findCol(h,['unrealized_']);
+      const positions=[]; let balance=cash,k=hi+1;
+      while(k<rows.length){
+        if(rows[k][0]&&/^as of date/i.test(rows[k][0])) break;
+        const r=rows[k],sym=(r[iSym]||'').trim();
+        if(!sym){k++;continue;}
+        if(/^as of|^account|^cash|^investments|^total value|^margin/i.test(sym)){k++;continue;}
+        if(sym.split(' ').length>4&&!/^united states/i.test(sym)){k++;continue;}
+        const mkt=iMkt!==-1?(r[iMkt]||'').trim().toUpperCase():'';
+        const cur=mkt==='CA'?'CAD':'USD';
+        const v=num(r[iVal]),g=num(r[iGain]);
+        if(v>0||sym){
+          positions.push({symbol:sym,name:r[iDesc]||sym,shares:num(r[iQty]),price:iPx!==-1?num(r[iPx]):0,value:v,gain:g,currency:cur});
+          balance+=v;
+        }
+        k++;
+      }
+      if(positions.length>0){
+        let uv=0,cv=0;
+        positions.forEach(p=>p.currency==='CAD'?cv+=p.value:uv+=p.value);
+        accounts.push({name:acctName,currency:cv>uv?'CAD':'USD',positions,balance,cash});
+      }
+      i=k;
+    } else i++;
   }
-  if (!positions.length) throw new Error('No positions found');
-  return [{ name: 'Holdings', positions, balance }];
+  if(!accounts.length) throw new Error('No TD accounts found');
+  return accounts;
 }
 
-const PARSERS = { fidelity: parseFidelity, etrade: parseEtrade, td_canada: parseTDCanada };
+const PARSERS={fidelity:parseFidelity,etrade:parseEtrade,td_canada:parseTDCanada};
 
-// ── Helpers ────────────────────────────────────────────────────────────────
-function fmt(n, d = 2) {
-  if (isNaN(n) || n == null) return '—';
-  return n.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
-}
-function fmtD(n) { return '$' + fmt(n); }
-function toUSD(v, key) { return key === 'td_canada' ? v * CAD_TO_USD : v; }
-
-function getTotal() {
-  let t = 0;
-  Object.entries(state.platforms).forEach(([k, p]) => {
-    if (!p) return;
-    p.forEach(a => { t += toUSD(a.balance, k); });
-  });
-  return t;
-}
-
-function getAllPositions() {
-  const map = {};
-  Object.entries(state.platforms).forEach(([k, p]) => {
-    if (!p) return;
-    const label = META[k].label;
-    p.forEach(acc => {
-      acc.positions.forEach(pos => {
-        const uv = toUSD(pos.value, k);
-        const ug = toUSD(pos.gain, k);
-        if (!map[pos.symbol]) map[pos.symbol] = { symbol: pos.symbol, name: pos.name, usdValue: 0, usdGain: 0, platforms: [] };
-        map[pos.symbol].usdValue += uv;
-        map[pos.symbol].usdGain += ug;
-        if (!map[pos.symbol].platforms.includes(label)) map[pos.symbol].platforms.push(label);
-      });
+// ════════════════════════════════════════════════════════════
+//  DATA HELPERS
+// ════════════════════════════════════════════════════════════
+function fmt(n,d=2){ if(isNaN(n)||n==null)return '—'; return n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}); }
+function fmtD(n){ return '$'+fmt(n); }
+function fmtC(n){ if(n>=1e9)return '$'+fmt(n/1e9,2)+'B'; if(n>=1e6)return '$'+fmt(n/1e6,2)+'M'; if(n>=1e3)return '$'+fmt(n/1e3,1)+'K'; return fmtD(n); }
+function toUSD(v,pc,ac){ const c=pc||ac||'USD'; return c==='CAD'?v*CAD_TO_USD:v; }
+function acctUSD(a){ return a.positions.reduce((s,p)=>s+toUSD(p.value,p.currency,a.currency),0); }
+function getAllAccounts(){ const out=[]; Object.entries(state.files).forEach(([pk,fl])=>fl.forEach(f=>f.accounts.forEach(a=>out.push({...a,pkey:pk})))); return out; }
+function getTotal(){ return getAllAccounts().reduce((s,a)=>s+acctUSD(a),0); }
+function getAllPositions(){
+  const map={};
+  getAllAccounts().forEach(acct=>{
+    const lbl=META[acct.pkey].label;
+    acct.positions.forEach(pos=>{
+      const uv=toUSD(pos.value,pos.currency,acct.currency),ug=toUSD(pos.gain,pos.currency,acct.currency);
+      if(!map[pos.symbol]) map[pos.symbol]={symbol:pos.symbol,name:pos.name,usdValue:0,usdGain:0,platforms:[]};
+      map[pos.symbol].usdValue+=uv; map[pos.symbol].usdGain+=ug;
+      if(!map[pos.symbol].platforms.includes(lbl)) map[pos.symbol].platforms.push(lbl);
     });
   });
-  return Object.values(map).sort((a, b) => b.usdValue - a.usdValue);
+  return Object.values(map).sort((a,b)=>b.usdValue-a.usdValue);
+}
+function loaded(){ return Object.entries(state.files).filter(([,fl])=>fl.length>0); }
+
+// ════════════════════════════════════════════════════════════
+//  RENDER
+// ════════════════════════════════════════════════════════════
+function render(){
+  const ld=loaded();
+  document.getElementById('loaded-badge').textContent=`${ld.length} / 3`;
+  ['import','overview','holdings'].forEach(v=>document.getElementById('nav-'+v).classList.toggle('active',state.view===v));
+  const el=document.getElementById('main-content');
+  el.innerHTML = state.view==='import' ? renderImport() : state.view==='overview' ? renderOverview() : renderHoldings();
 }
 
-function loadedPlatforms() {
-  return Object.entries(state.platforms).filter(([, p]) => p && p.length > 0);
-}
+// ── IMPORT ────────────────────────────────────────────────
+function renderImport(){
+  let html=`<div class="page">
+    <div class="page-title">Import</div>
+    <div class="page-sub">Upload CSVs from each brokerage. Everything stays on your device.</div>`;
 
-// ── Render ─────────────────────────────────────────────────────────────────
-function render() {
-  const loaded = loadedPlatforms();
-  document.getElementById('loaded-badge').textContent = `${loaded.length}/3 loaded`;
-  ['import', 'overview', 'holdings'].forEach(v => {
-    const el = document.getElementById('nav-' + v);
-    el.classList.toggle('active', state.view === v);
-  });
-  const main = document.getElementById('main-content');
-  if (state.view === 'import') main.innerHTML = renderImport();
-  else if (state.view === 'overview') main.innerHTML = renderOverview();
-  else main.innerHTML = renderHoldings();
-  attachListeners();
-}
+  Object.entries(META).forEach(([key,meta])=>{
+    const fl=state.files[key];
+    const has=fl.length>0;
+    const totalAccts=fl.reduce((s,f)=>s+f.accounts.length,0);
+    const totalPos=fl.reduce((s,f)=>f.accounts.reduce((ss,a)=>ss+a.positions.length,0)+s,0);
 
-// ── Import View ────────────────────────────────────────────────────────────
-function renderImport() {
-  const loaded = loadedPlatforms();
-  return `
-    <div>
-      <div style="margin-bottom:6px">
-        <div style="font-size:19px;font-weight:700;letter-spacing:-0.02em">Import Portfolios</div>
-        <div style="font-size:13px;color:var(--sub);margin-top:4px">Drop a CSV from each brokerage. Everything stays on your device.</div>
-      </div>
-    </div>
-    ${Object.entries(META).map(([key, meta]) => {
-      const p = state.platforms[key];
-      const hasData = p && p.length > 0;
-      const total = hasData ? p.reduce((s, a) => s + a.balance, 0) : 0;
-      return `
-      <div class="card import-platform" style="border-top-color:${meta.color}">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-          <div>
-            <div style="font-weight:700;font-size:15px">${meta.flag} ${meta.label}</div>
-            <div style="font-size:11px;color:var(--sub);margin-top:2px">${key === 'td_canada' ? 'CAD → auto-converted to USD' : 'USD'}</div>
-          </div>
-          ${hasData ? '<span class="tag" style="background:#22c55e22;color:#22c55e">✓ Loaded</span>' : ''}
+    html+=`<div class="section-label">${meta.flag} ${meta.label}</div>
+    <div class="card">
+
+      <!-- Platform header -->
+      <div class="platform-header">
+        <div class="platform-icon" style="background:${meta.bg}">${meta.flag}</div>
+        <div>
+          <div class="platform-title">${meta.label}</div>
+          <div class="platform-sub">${key==='td_canada'?'USD & CAD auto-detected':'All values in USD'}</div>
         </div>
-        <label class="drop-zone ${hasData ? 'drop-zone-ok' : ''}" id="dz-${key}" style="${hasData ? 'border-color:#22c55e' : ''}">
-          <input type="file" accept=".csv,.txt" data-key="${key}" onchange="handleFile(this)"/>
-          <div class="drop-icon">${hasData ? '✅' : '📁'}</div>
-          <div class="drop-text" style="${hasData ? 'color:#22c55e' : ''}">${hasData ? 'Re-import CSV' : 'Tap to select CSV'}</div>
-          <div class="drop-sub">Exported from ${meta.label}</div>
+        ${has?`<div class="platform-badge"><span class="badge badge-green">✓ ${totalPos} positions</span></div>`:''}
+      </div>
+
+      <!-- Drop zone -->
+      <div class="drop-zone-wrap">
+        <label class="drop-zone" id="dz-${key}">
+          <input type="file" accept=".csv,.txt" multiple data-key="${key}" onchange="handleFiles(this)"/>
+          <div class="drop-zone-icon">${has?'➕':'📂'}</div>
+          <div class="drop-zone-text">${has?'Add more CSV files':'Select CSV file'}</div>
         </label>
-        <div id="status-${key}" class="import-status"></div>
-        <div class="guide-box">
-          <div class="guide-title">HOW TO EXPORT</div>
-          <ol>${GUIDES[key].map(s => `<li>${s}</li>`).join('')}</ol>
-        </div>
-        ${hasData ? `
-          <div class="imported-list">
-            ${p.map(acc => `
-              <div class="imported-row">
-                <span class="imported-name">${acc.name}</span>
-                <span class="mono" style="font-weight:600;color:${meta.color}">${meta.currency === 'CAD' ? 'CA$' : '$'}${fmt(acc.balance)}</span>
-              </div>`).join('')}
-          </div>` : ''}
       </div>`;
-    }).join('')}
-    ${loaded.length > 0 ? `
-      <div style="text-align:center;padding:4px 0 8px">
-        <button class="btn-primary" onclick="setView('overview')">View Dashboard →</button>
-      </div>` : ''}
-  `;
-}
 
-// ── Overview View ──────────────────────────────────────────────────────────
-function renderOverview() {
-  const loaded = loadedPlatforms();
-  if (!loaded.length) return `
-    <div class="empty">
-      <div class="empty-icon">📥</div>
-      <div class="empty-title">No data yet</div>
-      <div class="empty-sub">Import CSVs from your brokerages to get started</div>
-      <button class="btn-primary" onclick="setView('import')">Go to Import →</button>
-    </div>`;
-
-  const total = getTotal();
-  const allPos = getAllPositions();
-  const donutSegs = loaded.map(([k, p]) => ({
-    label: META[k].label,
-    color: META[k].color,
-    pct: total ? (p.reduce((s, a) => s + toUSD(a.balance, k), 0) / total) * 100 : 0,
-  }));
-
-  // SVG donut
-  const r = 38, circ = 2 * Math.PI * r;
-  let off = 0, svgPaths = '';
-  const total2 = donutSegs.reduce((s, x) => s + x.pct, 0) || 1;
-  donutSegs.forEach(s => {
-    const d = (s.pct / total2) * circ;
-    svgPaths += `<circle cx="50" cy="50" r="${r}" fill="none" stroke="${s.color}" stroke-width="12"
-      stroke-dasharray="${d} ${circ - d}" stroke-dashoffset="${-off}" transform="rotate(-90 50 50)"/>`;
-    off += d;
-  });
-
-  return `
-    <div class="stat-grid">
-      <div class="stat-chip" style="grid-column:span 2">
-        <div class="stat-label">Total Portfolio (USD)</div>
-        <div class="stat-value" style="color:var(--accent)">${fmtD(total)}</div>
-        <div class="stat-sub">${loaded.map(([k]) => META[k].label).join(' · ')}</div>
-      </div>
-      <div class="stat-chip">
-        <div class="stat-label">Positions</div>
-        <div class="stat-value" style="color:#34D399">${allPos.length}</div>
-        <div class="stat-sub">unique holdings</div>
-      </div>
-      <div class="stat-chip">
-        <div class="stat-label">Top Holding</div>
-        <div class="stat-value" style="color:#FB923C;font-size:17px">${allPos[0]?.symbol || '—'}</div>
-        <div class="stat-sub">${allPos[0] ? fmtD(allPos[0].usdValue) : '—'}</div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-title">ALLOCATION BY PLATFORM</div>
-      <div class="donut-wrap">
-        <svg viewBox="0 0 100 100" width="110" height="110">
-          <circle cx="50" cy="50" r="${r}" fill="none" stroke="#1E2130" stroke-width="12"/>
-          ${svgPaths}
-        </svg>
-      </div>
-      ${donutSegs.map(s => `
-        <div class="legend-row">
-          <div class="legend-label">
-            <div class="legend-dot" style="background:${s.color}"></div>
-            ${s.label}
+    // Uploaded files
+    if(has){
+      html+=`<div class="file-list">`;
+      fl.forEach((f,fi)=>{
+        const names=f.accounts.map(a=>{
+          const c=a.currency!=='USD'?` (${a.currency})`:'';
+          return a.name+c;
+        }).join(', ');
+        html+=`<div class="file-row">
+          <div class="file-icon">📄</div>
+          <div style="flex:1;min-width:0">
+            <div class="file-name">${f.name}</div>
+            <div class="file-accts">${names}</div>
           </div>
-          <span class="legend-pct">${fmt(s.pct, 1)}%</span>
-        </div>
-        <div class="bar-wrap" style="margin-bottom:10px">
-          <div class="bar-fill" style="background:${s.color};width:${s.pct}%"></div>
-        </div>`).join('')}
-    </div>
-
-    <div class="section-label">PLATFORMS</div>
-    ${loaded.map(([key, p]) => {
-      const meta = META[key];
-      const isCAD = meta.currency === 'CAD';
-      const native = p.reduce((s, a) => s + a.balance, 0);
-      const usdBal = toUSD(native, key);
-      const isExp = state.expand === key;
-      return `
-        <div class="platform-card" style="border-left-color:${meta.color}" onclick="toggleExpand('${key}')">
-          <div class="platform-header">
-            <div>
-              <div class="platform-name">
-                <span style="font-size:17px">${meta.flag}</span>
-                ${meta.label}
-                <span class="tag" style="background:${meta.color}22;color:${meta.color}">${p.length} acct${p.length !== 1 ? 's' : ''}</span>
-              </div>
-              <div class="platform-sub">${p.map(a => a.name).join(' · ')}</div>
-            </div>
-            <div>
-              <div class="platform-value">${fmtD(usdBal)}</div>
-              ${isCAD ? `<div class="platform-cad">CA$${fmt(native)}</div>` : ''}
-            </div>
-          </div>
-          ${isExp ? p.map(acc => `
-            <div class="acct-row">
-              <div>
-                <div class="acct-name">${acc.name}</div>
-                <div class="acct-pos">${acc.positions.length} positions</div>
-              </div>
-              <div class="acct-bal">${isCAD ? 'CA$' : '$'}${fmt(acc.balance)}</div>
-            </div>`).join('') : ''}
+          <button class="file-remove" onclick="removeFile('${key}',${fi})">✕</button>
         </div>`;
-    }).join('')}
+      });
+      html+=`</div>`;
 
-    <div class="card">
-      <div class="card-title">TOP 5 HOLDINGS</div>
-      ${allPos.slice(0, 5).map((pos, i) => `
-        <div class="top5-row">
-          <div>
-            <div class="mono" style="font-weight:700;font-size:14px">${pos.symbol}</div>
-            <div style="font-size:11px;color:var(--sub)">${pos.platforms.join(', ')}</div>
-          </div>
-          <div style="text-align:right">
-            <div class="mono" style="font-weight:600;font-size:13px">${fmtD(pos.usdValue)}</div>
-            <div class="${pos.usdGain >= 0 ? 'pos' : 'neg'}" style="font-size:11px">
-              ${pos.usdGain >= 0 ? '+' : ''}${fmtD(pos.usdGain)}
+      // Account breakdown
+      const allAccts=fl.flatMap(f=>f.accounts);
+      if(allAccts.length){
+        html+=`<div class="acct-rows">`;
+        allAccts.forEach(acc=>{
+          const usd=acctUSD(acc),isCAD=acc.currency==='CAD';
+          html+=`<div class="acct-row">
+            <div>
+              <div class="acct-name">${acc.name}${isCAD?`<span class="cur-tag" style="background:${META.td_canada.bg};color:${META.td_canada.color}">CAD</span>`:''}</div>
+              <div class="acct-pos">${acc.positions.length} positions</div>
             </div>
-          </div>
-        </div>`).join('')}
-    </div>
-  `;
-}
-
-// ── Holdings View ──────────────────────────────────────────────────────────
-function renderHoldings() {
-  const loaded = loadedPlatforms();
-  if (!loaded.length) return `
-    <div class="empty">
-      <div class="empty-icon">📋</div>
-      <div class="empty-title">No data yet</div>
-      <div class="empty-sub">Import your CSVs first</div>
-      <button class="btn-primary" onclick="setView('import')">Go to Import →</button>
-    </div>`;
-
-  const total = getTotal();
-  let allPos = getAllPositions();
-  if (state.sortBy === 'gain') allPos.sort((a, b) => b.usdGain - a.usdGain);
-  else if (state.sortBy === 'symbol') allPos.sort((a, b) => a.symbol.localeCompare(b.symbol));
-
-  return `
-    <div class="sort-bar">
-      ${['value', 'gain', 'symbol'].map(s => `
-        <button class="sort-btn ${state.sortBy === s ? 'active' : ''}" onclick="setSort('${s}')">${s}</button>
-      `).join('')}
-    </div>
-    <div class="card" style="padding:14px 16px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <div style="font-weight:700;font-size:14px">${allPos.length} Holdings</div>
-        <div class="mono" style="font-size:13px;color:var(--accent);font-weight:700">${fmtD(total)}</div>
-      </div>
-      ${allPos.map((pos, i) => {
-        const cost = pos.usdValue - pos.usdGain;
-        const pct = cost ? (pos.usdGain / cost) * 100 : 0;
-        const plColors = pos.platforms.map(pl => Object.values(META).find(m => m.label === pl)?.color || '#888');
-        return `
-          <div class="holding-row">
-            <span class="h-rank">${i + 1}</span>
-            <div style="flex:1;min-width:0">
-              <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
-                <span class="h-sym">${pos.symbol}</span>
-                ${pos.platforms.map((pl, pi) => `<span class="tag" style="background:${plColors[pi]}22;color:${plColors[pi]}">${pl.split(' ')[0]}</span>`).join('')}
-              </div>
-              <div class="h-name">${pos.name}</div>
-            </div>
-            <div class="h-right">
-              <div class="h-val">${fmtD(pos.usdValue)}</div>
-              <div class="h-gain ${pos.usdGain >= 0 ? 'pos' : 'neg'}">${pos.usdGain >= 0 ? '+' : ''}${fmt(pct, 1)}%</div>
+            <div>
+              <div class="acct-bal">${fmtD(usd)}</div>
+              ${isCAD?`<div class="acct-sub">CA$${fmt(acc.balance)}</div>`:''}
             </div>
           </div>`;
-      }).join('')}
-    </div>
-  `;
-}
-
-// ── Event handlers ─────────────────────────────────────────────────────────
-function setView(v) {
-  state.view = v;
-  render();
-}
-
-function setSort(s) {
-  state.sortBy = s;
-  render();
-}
-
-function toggleExpand(key) {
-  state.expand = state.expand === key ? null : key;
-  render();
-}
-
-function handleFile(input) {
-  const key = input.dataset.key;
-  const file = input.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    try {
-      const accounts = PARSERS[key](e.target.result);
-      const n = accounts.reduce((s, a) => s + a.positions.length, 0);
-      state.platforms[key] = accounts;
-      render();
-      // Show status after render
-      const el = document.getElementById('status-' + key);
-      if (el) {
-        el.style.color = '#22c55e';
-        el.textContent = `✓ Imported ${n} position${n !== 1 ? 's' : ''} across ${accounts.length} account${accounts.length !== 1 ? 's' : ''}`;
-      }
-    } catch (err) {
-      const el = document.getElementById('status-' + key);
-      if (el) {
-        el.style.color = '#ef4444';
-        el.textContent = '✗ ' + (err.message || 'Parse failed — check format guide');
+        });
+        html+=`</div>`;
       }
     }
-  };
-  reader.readAsText(file);
+
+    // How to export
+    html+=`<div class="guide">
+      <div class="guide-title">How to export</div>
+      <ol>${GUIDES[key].map(s=>`<li>${s}</li>`).join('')}</ol>
+    </div>
+
+    </div>`;/* end .card */
+
+    html+=`<div id="status-${key}" class="import-status"></div>`;
+  });
+
+  if(loaded().length>0){
+    html+=`<div class="cta"><button class="cta-btn" onclick="setView('overview')">View Dashboard →</button></div>`;
+  }
+
+  html+=`</div>`;
+  return html;
 }
 
-function attachListeners() {
-  // File inputs are handled inline via onchange
+// ── OVERVIEW ──────────────────────────────────────────────
+function renderOverview(){
+  const ld=loaded();
+  if(!ld.length) return emptyState('📥','No data imported','Upload CSVs from your brokerages to see your consolidated portfolio.','import','Go to Import');
+
+  const total=getTotal(),allPos=getAllPositions(),allAccts=getAllAccounts();
+  const totalGain=allPos.reduce((s,p)=>s+p.usdGain,0);
+  const gainPct=total?(totalGain/(total-totalGain))*100:0;
+
+  const segs=ld.map(([k])=>{
+    const val=state.files[k].reduce((s,f)=>f.accounts.reduce((ss,a)=>ss+acctUSD(a),0)+s,0);
+    return {label:META[k].label,color:META[k].color,bg:META[k].bg,pct:total?(val/total)*100:0};
+  });
+
+  // SVG donut
+  const R=40,circ=2*Math.PI*R; let off=0,paths='';
+  const tot2=segs.reduce((s,x)=>s+x.pct,0)||1;
+  segs.forEach(s=>{
+    const d=(s.pct/tot2)*circ;
+    paths+=`<circle cx="50" cy="50" r="${R}" fill="none" stroke="${s.color}" stroke-width="12" stroke-linecap="round"
+      stroke-dasharray="${Math.max(d-3,0)} ${circ-Math.max(d-3,0)}"
+      stroke-dashoffset="${-off-1.5}" transform="rotate(-90 50 50)"/>`;
+    off+=d;
+  });
+
+  let html=`<div class="page">`;
+
+  // Hero card
+  html+=`<div class="hero-card">
+    <div class="hero-label">Total Portfolio (USD)</div>
+    <div class="hero-value">${fmtC(total)}</div>
+    <div class="hero-row">
+      <span class="badge ${totalGain>=0?'badge-green':'badge-red'}" style="background:rgba(255,255,255,.2);color:#fff">
+        ${totalGain>=0?'▲':'▼'} ${fmtC(Math.abs(totalGain))} &nbsp;${totalGain>=0?'+':''}${fmt(gainPct,2)}%
+      </span>
+      <span class="hero-sub">all-time gain</span>
+    </div>
+  </div>`;
+
+  // Stats
+  html+=`<div class="stats-strip">
+    <div class="stat-tile">
+      <div class="stat-label">Accounts</div>
+      <div class="stat-value" style="color:var(--teams-purple)">${allAccts.length}</div>
+      <div class="stat-sub">${ld.length} platform${ld.length!==1?'s':''}</div>
+    </div>
+    <div class="stat-tile">
+      <div class="stat-label">Positions</div>
+      <div class="stat-value" style="color:var(--blue)">${allPos.length}</div>
+      <div class="stat-sub">unique holdings</div>
+    </div>
+    <div class="stat-tile">
+      <div class="stat-label">Largest</div>
+      <div class="stat-value" style="color:var(--orange);font-size:17px">${allPos[0]?.symbol||'—'}</div>
+      <div class="stat-sub">${allPos[0]?fmtC(allPos[0].usdValue):'—'}</div>
+    </div>
+  </div>`;
+
+  // Allocation
+  html+=`<div class="donut-card">
+    <div class="donut-card-title">Allocation by Platform</div>
+    <div class="donut-layout">
+      <svg viewBox="0 0 100 100" width="110" height="110" style="flex-shrink:0">
+        <circle cx="50" cy="50" r="40" fill="none" stroke="var(--border)" stroke-width="12"/>
+        ${paths}
+      </svg>
+      <div class="donut-legend">
+        ${segs.map(s=>`<div class="donut-leg">
+          <div class="donut-leg-row">
+            <div class="donut-leg-dot" style="background:${s.color}"></div>
+            <div class="donut-leg-name">${s.label}</div>
+            <div class="donut-leg-pct">${fmt(s.pct,1)}%</div>
+          </div>
+          <div class="donut-bar" style="margin-left:18px">
+            <div class="donut-bar-fill" style="background:${s.color};width:${s.pct}%"></div>
+          </div>
+        </div>`).join('')}
+      </div>
+    </div>
+  </div>`;
+
+  // Platforms
+  html+=`<div class="section-label">Accounts</div><div class="card">`;
+  ld.forEach(([key],li)=>{
+    const meta=META[key],accts=state.files[key].flatMap(f=>f.accounts);
+    const totalUSD=accts.reduce((s,a)=>s+acctUSD(a),0);
+    const isExp=state.expand===key;
+    html+=`<div class="platform-row" onclick="toggleExpand('${key}')">
+      <div class="pl-icon" style="background:${meta.bg}">${meta.flag}</div>
+      <div class="pl-body">
+        <div class="pl-name">${meta.label}</div>
+        <div class="pl-detail">${accts.length} account${accts.length!==1?'s':''} · ${accts.reduce((s,a)=>s+a.positions.length,0)} positions</div>
+      </div>
+      <div class="pl-right">
+        <div class="pl-value">${fmtD(totalUSD)}</div>
+      </div>
+      <span class="chevron ${isExp?'open':''}">▼</span>
+    </div>
+    ${isExp?accts.map(acc=>{
+      const usd=acctUSD(acc),isCAD=acc.currency==='CAD';
+      return `<div class="sub-acct-row">
+        <div>
+          <div class="sub-acct-name">${acc.name}${isCAD?`<span class="cur-tag" style="background:${META.td_canada.bg};color:${META.td_canada.color}">CAD</span>`:''}</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:1px">${acc.positions.length} positions</div>
+        </div>
+        <div class="sub-acct-right">
+          <div class="sub-acct-val">${fmtD(usd)}</div>
+          ${isCAD?`<div class="sub-acct-sub">CA$${fmt(acc.balance)}</div>`:''}
+        </div>
+      </div>`;
+    }).join(''):''}`;
+  });
+  html+=`</div>`;
+
+  // Top holdings
+  html+=`<div class="section-label">Top Holdings</div><div class="card">`;
+  allPos.slice(0,8).forEach((pos,i)=>{
+    const cost=pos.usdValue-pos.usdGain,pct=cost?(pos.usdGain/cost)*100:0;
+    const dots=pos.platforms.map(pl=>{const m=Object.values(META).find(x=>x.label===pl);return m?`<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${m.color};margin-right:3px"></span>`:''}).join('');
+    html+=`<div class="holding-row">
+      <div class="h-num">${i+1}</div>
+      <div style="width:62px;flex-shrink:0">
+        <div class="h-sym">${pos.symbol}</div>
+        <div style="margin-top:3px">${dots}</div>
+      </div>
+      <div class="h-name">${pos.name}</div>
+      <div class="h-right">
+        <div class="h-val">${fmtD(pos.usdValue)}</div>
+        <div class="h-pct ${pct>=0?'pos':'neg'}">${pct>=0?'+':''}${fmt(pct,1)}%</div>
+      </div>
+    </div>`;
+  });
+  html+=`</div></div>`;
+  return html;
 }
 
-// ── Boot ───────────────────────────────────────────────────────────────────
+// ── HOLDINGS ──────────────────────────────────────────────
+function renderHoldings(){
+  const ld=loaded();
+  if(!ld.length) return emptyState('📋','No data imported','Import your CSVs to see all holdings.','import','Go to Import');
+
+  const total=getTotal();
+  let allPos=getAllPositions();
+  if(state.sortBy==='gain')   allPos.sort((a,b)=>b.usdGain-a.usdGain);
+  if(state.sortBy==='symbol') allPos.sort((a,b)=>a.symbol.localeCompare(b.symbol));
+
+  return `<div class="page">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;padding:20px 16px 4px">
+      <div style="font-size:24px;font-weight:700;letter-spacing:-.02em">${allPos.length} Holdings</div>
+      <div style="font-size:15px;font-weight:700;color:var(--teams-purple);font-variant-numeric:tabular-nums">${fmtC(total)}</div>
+    </div>
+    <div class="seg-row">
+      ${['value','gain','symbol'].map(s=>`
+        <button class="seg-btn${state.sortBy===s?' active':''}" onclick="setSort('${s}')">
+          ${s==='value'?'By Value':s==='gain'?'By Gain':'A – Z'}
+        </button>`).join('')}
+    </div>
+    <div style="margin:12px 0 0">
+      <div class="card" style="margin:0 16px">
+        ${allPos.map((pos,i)=>{
+          const cost=pos.usdValue-pos.usdGain,pct=cost?(pos.usdGain/cost)*100:0;
+          const dots=pos.platforms.map(pl=>{const m=Object.values(META).find(x=>x.label===pl);return m?`<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${m.color};margin-right:3px"></span>`:''}).join('');
+          return `<div class="holding-row">
+            <div class="h-num">${i+1}</div>
+            <div style="width:62px;flex-shrink:0">
+              <div class="h-sym">${pos.symbol.length<=5?pos.symbol:pos.symbol.slice(0,5)}</div>
+              <div style="margin-top:3px">${dots}</div>
+            </div>
+            <div class="h-name">${pos.name}</div>
+            <div class="h-right">
+              <div class="h-val">${fmtD(pos.usdValue)}</div>
+              <div class="h-pct ${pct>=0?'pos':'neg'}">${pct>=0?'+':''}${fmt(pct,1)}%</div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
+function emptyState(icon,title,body,v,btn){
+  return `<div class="empty"><div class="empty-icon">${icon}</div><div class="empty-title">${title}</div><div class="empty-body">${body}</div><button class="empty-btn" onclick="setView('${v}')">${btn}</button></div>`;
+}
+
+// ════════════════════════════════════════════════════════════
+//  EVENTS
+// ════════════════════════════════════════════════════════════
+function setView(v){ state.view=v; render(); document.getElementById('main-content').scrollTop=0; }
+function setSort(s){ state.sortBy=s; render(); }
+function toggleExpand(key){ state.expand=state.expand===key?null:key; render(); }
+function removeFile(key,idx){ state.files[key].splice(idx,1); render(); }
+
+function handleFiles(input){
+  const key=input.dataset.key,files=Array.from(input.files);
+  if(!files.length) return;
+  let done=0; const errors=[];
+  files.forEach(file=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      try{ state.files[key].push({name:file.name,accounts:PARSERS[key](e.target.result)}); }
+      catch(err){ errors.push(`${file.name}: ${err.message}`); }
+      if(++done===files.length){
+        render();
+        if(errors.length){ const el=document.getElementById('status-'+key); if(el){el.style.color='var(--red)';el.textContent='Error: '+errors.join(' | ');} }
+      }
+    };
+    reader.readAsText(file);
+  });
+}
+
 render();
 </script>
 </body>
