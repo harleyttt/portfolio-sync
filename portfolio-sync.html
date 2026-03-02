@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="PortfolioSync"/>
+  <meta name="theme-color" content="#0A0B0F"/>
+  <title>PortfolioSync</title>
+
+  <!-- PWA icon (inline SVG as data URI) -->
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230A0B0F'/%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%237C3AED'/%3E%3Cstop offset='1' stop-color='%233B82F6'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ctext x='50' y='68' font-size='52' text-anchor='middle' fill='url(%23g)'%3E◈%3C/text%3E%3C/svg%3E"/>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;600&display=swap');
+
+    :root {
+      --bg: #0A0B0F;
+      --surface: #13151C;
+      --border: #1E2130;
+      --muted: #0D0E15;
+      --text: #E2E8F0;
+      --sub: #64748B;
+      --faint: #475569;
+      --pos: #22c55e;
+      --neg: #ef4444;
+      --purple: #7C3AED;
+      --green: #059669;
+      --red: #DC2626;
+      --accent: #A78BFA;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bot: env(safe-area-inset-bottom, 0px);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    html, body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', 'Segoe UI', sans-serif;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    #app {
+      display: flex;
+      flex-direction: column;
+      height: 100dvh;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: #0D0E15;
+      border-bottom: 1px solid var(--border);
+      padding: calc(var(--safe-top) + 12px) 20px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .logo { display: flex; align-items: center; gap: 9px; }
+    .logo-icon {
+      width: 30px; height: 30px;
+      background: linear-gradient(135deg, #7C3AED, #3B82F6);
+      border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px;
+    }
+    .logo-text { font-weight: 700; font-size: 15px; letter-spacing: -0.02em; }
+    .loaded-badge { font-size: 12px; color: var(--sub); }
+
+    /* ── Bottom Nav ── */
+    .bottom-nav {
+      background: #0D0E15;
+      border-top: 1px solid var(--border);
+      display: flex;
+      padding-bottom: var(--safe-bot);
+      flex-shrink: 0;
+    }
+    .nav-item {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; gap: 3px;
+      padding: 10px 0;
+      cursor: pointer; border: none; background: none; color: var(--sub);
+      font-size: 10px; font-weight: 600; letter-spacing: 0.04em;
+      transition: color 0.15s;
+    }
+    .nav-item.active { color: var(--accent); }
+    .nav-icon { font-size: 20px; line-height: 1; }
+
+    /* ── Scroll area ── */
+    .scroll-area {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 18px;
+    }
+    .card-title {
+      font-size: 11px; font-weight: 700; color: var(--sub);
+      letter-spacing: 0.07em; margin-bottom: 14px;
+    }
+
+    /* ── Stat chips ── */
+    .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .stat-chip {
+      background: var(--muted); border-radius: 12px; padding: 14px;
+    }
+    .stat-label { font-size: 11px; color: var(--sub); margin-bottom: 4px; }
+    .stat-value { font-size: 20px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+    .stat-sub { font-size: 11px; color: var(--faint); margin-top: 3px; }
+
+    /* ── Platform card ── */
+    .platform-card {
+      border-radius: 14px; padding: 14px 16px;
+      background: var(--muted);
+      border-left: 3px solid transparent;
+      cursor: pointer;
+      margin-bottom: 10px;
+    }
+    .platform-card:last-child { margin-bottom: 0; }
+    .platform-header { display: flex; justify-content: space-between; align-items: flex-start; }
+    .platform-name { display: flex; align-items: center; gap: 7px; font-weight: 700; font-size: 15px; }
+    .platform-sub { font-size: 11px; color: var(--sub); margin-top: 2px; }
+    .platform-value { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 18px; text-align: right; }
+    .platform-cad { font-size: 11px; color: var(--faint); text-align: right; }
+
+    .acct-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 9px 0; border-top: 1px solid var(--border);
+    }
+    .acct-name { font-weight: 600; font-size: 13px; }
+    .acct-pos { font-size: 11px; color: var(--sub); margin-top: 1px; }
+    .acct-bal { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 14px; }
+
+    /* ── Tags ── */
+    .tag {
+      display: inline-block; padding: 2px 7px; border-radius: 6px;
+      font-size: 10px; font-weight: 700;
+    }
+
+    /* ── Holdings table ── */
+    .holding-row {
+      display: flex; align-items: center; padding: 11px 0;
+      border-bottom: 1px solid var(--border); gap: 10px;
+      cursor: default;
+    }
+    .holding-row:last-child { border-bottom: none; }
+    .h-rank { font-size: 11px; color: var(--faint); width: 18px; flex-shrink: 0; }
+    .h-sym { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 14px; flex-shrink: 0; width: 72px; }
+    .h-name { font-size: 12px; color: var(--sub); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .h-right { text-align: right; flex-shrink: 0; }
+    .h-val { font-family: 'JetBrains Mono', monospace; font-weight: 600; font-size: 13px; }
+    .h-gain { font-size: 11px; }
+
+    /* ── Sort bar ── */
+    .sort-bar { display: flex; gap: 6px; margin-bottom: 14px; }
+    .sort-btn {
+      flex: 1; padding: 8px; border-radius: 9px; border: 1px solid var(--border);
+      background: none; color: var(--sub); font-size: 12px; font-weight: 600;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .sort-btn.active { background: var(--border); color: var(--text); }
+
+    /* ── Donut ── */
+    .donut-wrap { display: flex; justify-content: center; margin-bottom: 14px; }
+    .legend-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .legend-label { font-size: 13px; display: flex; align-items: center; gap: 7px; }
+    .legend-pct { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 600; }
+
+    /* ── Import ── */
+    .import-platform { border-top: 3px solid transparent; }
+    .drop-zone {
+      border: 2px dashed var(--border); border-radius: 12px;
+      padding: 20px; text-align: center; cursor: pointer;
+      background: var(--muted); transition: all 0.15s;
+      position: relative;
+    }
+    .drop-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+    .drop-zone.drag { border-color: var(--purple); background: #7C3AED15; }
+    .drop-icon { font-size: 28px; margin-bottom: 6px; }
+    .drop-text { font-weight: 600; font-size: 14px; color: var(--sub); }
+    .drop-sub { font-size: 12px; color: var(--faint); margin-top: 3px; }
+    .import-status { margin-top: 8px; font-size: 13px; font-weight: 500; }
+
+    .guide-box {
+      margin-top: 12px; background: var(--muted);
+      border-radius: 10px; padding: 12px 14px;
+    }
+    .guide-title { font-size: 10px; font-weight: 700; color: var(--faint); letter-spacing: 0.08em; margin-bottom: 7px; }
+    .guide-box ol { padding-left: 16px; }
+    .guide-box li { font-size: 12px; color: var(--sub); line-height: 1.9; }
+
+    .imported-list { margin-top: 10px; }
+    .imported-row {
+      display: flex; justify-content: space-between; font-size: 13px;
+      padding: 6px 0; border-top: 1px solid var(--border);
+    }
+    .imported-name { color: var(--sub); }
+
+    /* ── Empty state ── */
+    .empty {
+      text-align: center; padding: 60px 20px;
+    }
+    .empty-icon { font-size: 48px; margin-bottom: 14px; }
+    .empty-title { font-size: 17px; font-weight: 600; margin-bottom: 6px; }
+    .empty-sub { font-size: 14px; color: var(--sub); margin-bottom: 22px; }
+    .btn-primary {
+      display: inline-block; background: var(--purple);
+      color: white; padding: 12px 28px; border-radius: 12px;
+      font-weight: 700; font-size: 15px; border: none; cursor: pointer;
+    }
+
+    /* ── Utilities ── */
+    .pos { color: var(--pos); }
+    .neg { color: var(--neg); }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+    .section-label {
+      font-size: 11px; font-weight: 700; color: var(--sub);
+      letter-spacing: 0.08em; margin-bottom: 10px; padding-left: 2px;
+    }
+
+    /* ── Progress bar ── */
+    .bar-wrap { background: var(--border); border-radius: 4px; height: 5px; margin-top: 4px; }
+    .bar-fill { height: 100%; border-radius: 4px; transition: width 0.4s; }
+
+    /* Top 5 card */
+    .top5-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 9px 0; border-bottom: 1px solid var(--border);
+    }
+    .top5-row:last-child { border-bottom: none; }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="header">
+    <div class="logo">
+      <div class="logo-icon">◈</div>
+      <span class="logo-text">PortfolioSync</span>
+    </div>
+    <span class="loaded-badge" id="loaded-badge">0/3 loaded</span>
+  </div>
+
+  <div class="scroll-area" id="main-content"></div>
+
+  <nav class="bottom-nav">
+    <button class="nav-item active" id="nav-import" onclick="setView('import')">
+      <span class="nav-icon">📥</span>IMPORT
+    </button>
+    <button class="nav-item" id="nav-overview" onclick="setView('overview')">
+      <span class="nav-icon">📊</span>OVERVIEW
+    </button>
+    <button class="nav-item" id="nav-holdings" onclick="setView('holdings')">
+      <span class="nav-icon">📋</span>HOLDINGS
+    </button>
+  </nav>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+const CAD_TO_USD = 0.74;
+const state = {
+  view: 'import',
+  sortBy: 'value',
+  expand: null,
+  platforms: { fidelity: null, etrade: null, td_canada: null }
+};
+
+const META = {
+  fidelity:  { label: 'Fidelity',       flag: '🇺🇸', color: '#059669', currency: 'USD' },
+  etrade:    { label: 'E*TRADE',        flag: '🇺🇸', color: '#7C3AED', currency: 'USD' },
+  td_canada: { label: 'TD Direct (CA)', flag: '🇨🇦', color: '#DC2626', currency: 'CAD' }
+};
+
+const GUIDES = {
+  fidelity: [
+    'Log in → Accounts & Trade → Portfolio',
+    'Click the Positions tab',
+    'Click the ⬇ Download icon (top right)',
+    'Save as .CSV'
+  ],
+  etrade: [
+    'Log in → go to Portfolios page',
+    'Click Positions tab, select account',
+    'Click Download → Collapsed View, All Positions',
+    'Save as .CSV'
+  ],
+  td_canada: [
+    'Log in to TD WebBroker',
+    'Go to Accounts → Account Holdings',
+    'Select account from dropdown',
+    'Scroll down → "Download to: Spreadsheet (.CSV)" → Download'
+  ]
+};
+
+// ── CSV Parsing ────────────────────────────────────────────────────────────
+function parseRows(text) {
+  text = text.replace(/^\uFEFF/, '').trim();
+  return text.split(/\r?\n/).map(line => {
+    const cols = []; let cur = '', inQ = false;
+    for (const c of line) {
+      if (c === '"') inQ = !inQ;
+      else if (c === ',' && !inQ) { cols.push(cur.trim()); cur = ''; }
+      else cur += c;
+    }
+    cols.push(cur.trim());
+    return cols;
+  });
+}
+
+function num(s) {
+  if (!s || s === '--' || s === 'n/a') return 0;
+  return parseFloat(String(s).replace(/[$,%\s]/g, '')) || 0;
+}
+
+function findCol(hdrs, keywords) {
+  for (const kw of [].concat(keywords)) {
+    const i = hdrs.findIndex(h => h.includes(kw));
+    if (i !== -1) return i;
+  }
+  return -1;
+}
+
+function norm(row) {
+  return row.map(h => h.toLowerCase().replace(/[^a-z0-9]/g, '_'));
+}
+
+function parseFidelity(text) {
+  const rows = parseRows(text);
+  const hi = rows.findIndex(r => r.some(c => /symbol/i.test(c)));
+  if (hi === -1) throw new Error("No 'Symbol' column found");
+  const hdrs = norm(rows[hi]);
+  const iSym = findCol(hdrs, 'symbol');
+  const iDesc = findCol(hdrs, ['description', 'security_description']);
+  const iQty = findCol(hdrs, ['quantity', 'qty']);
+  const iPrice = findCol(hdrs, ['last_price', 'current_price', 'price']);
+  const iVal = findCol(hdrs, ['current_value', 'market_value', 'value']);
+  const iGain = findCol(hdrs, ['total_gain_loss_dollar', 'total_gain', 'unrealized']);
+  const iAcct = findCol(hdrs, ['account_name', 'account_number']);
+  const map = {};
+  for (let i = hi + 1; i < rows.length; i++) {
+    const r = rows[i];
+    const sym = (r[iSym] || '').replace(/\*/g, '').trim();
+    if (!sym || /total|the data/i.test(sym)) continue;
+    const acct = iAcct !== -1 ? (r[iAcct] || 'My Account') : 'My Account';
+    const value = num(r[iVal]); const gain = num(r[iGain]);
+    if (!map[acct]) map[acct] = { name: acct, positions: [], balance: 0 };
+    map[acct].positions.push({ symbol: sym, name: iDesc !== -1 ? r[iDesc] : sym, shares: num(r[iQty]), price: num(r[iPrice]), value, gain });
+    map[acct].balance += value;
+  }
+  const res = Object.values(map);
+  if (!res.length || res.every(a => !a.positions.length)) throw new Error('No positions found');
+  return res;
+}
+
+function parseEtrade(text) {
+  const rows = parseRows(text);
+  const hi = rows.findIndex(r => r.some(c => /symbol/i.test(c)));
+  if (hi === -1) throw new Error("No 'Symbol' column found");
+  const hdrs = norm(rows[hi]);
+  const iSym = findCol(hdrs, 'symbol');
+  const iQty = findCol(hdrs, ['quantity', 'qty', 'shares']);
+  const iPrice = findCol(hdrs, ['last_price', 'last', 'price']);
+  const iVal = findCol(hdrs, ['value', 'market_value', 'current_value']);
+  const iGain = findCol(hdrs, ['gain_loss', 'unrealized_gain', 'total_gain']);
+  const iDesc = findCol(hdrs, ['description', 'name', 'security']);
+  const positions = []; let balance = 0;
+  for (let i = hi + 1; i < rows.length; i++) {
+    const r = rows[i];
+    const sym = (r[iSym] || '').trim();
+    if (!sym || /total|account/i.test(sym)) continue;
+    const value = num(r[iVal]); const gain = num(r[iGain]);
+    balance += value;
+    positions.push({ symbol: sym, name: iDesc !== -1 ? r[iDesc] : sym, shares: num(r[iQty]), price: num(r[iPrice]), value, gain });
+  }
+  if (!positions.length) throw new Error('No positions found');
+  return [{ name: 'Portfolio', positions, balance }];
+}
+
+function parseTDCanada(text) {
+  const rows = parseRows(text);
+  const hi = rows.findIndex(r => r.some(c => /symbol|security/i.test(c)));
+  if (hi === -1) throw new Error('No header row found');
+  const hdrs = norm(rows[hi]);
+  const iSym = findCol(hdrs, ['symbol', 'ticker']);
+  const iDesc = findCol(hdrs, ['description', 'security_description', 'name']);
+  const iQty = findCol(hdrs, ['quantity', 'qty', 'shares', 'units']);
+  const iPrice = findCol(hdrs, ['market_price', 'price', 'last']);
+  const iVal = findCol(hdrs, ['market_value', 'current_value', 'value']);
+  const iGain = findCol(hdrs, ['unrealized_gain', 'gain_loss', 'gain']);
+  const positions = []; let balance = 0;
+  for (let i = hi + 1; i < rows.length; i++) {
+    const r = rows[i];
+    const sym = (r[iSym] || '').trim();
+    if (!sym || /total/i.test(sym)) continue;
+    const value = num(r[iVal]); const gain = num(r[iGain]);
+    balance += value;
+    positions.push({ symbol: sym, name: iDesc !== -1 ? r[iDesc] : sym, shares: num(r[iQty]), price: num(r[iPrice]), value, gain });
+  }
+  if (!positions.length) throw new Error('No positions found');
+  return [{ name: 'Holdings', positions, balance }];
+}
+
+const PARSERS = { fidelity: parseFidelity, etrade: parseEtrade, td_canada: parseTDCanada };
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function fmt(n, d = 2) {
+  if (isNaN(n) || n == null) return '—';
+  return n.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
+}
+function fmtD(n) { return '$' + fmt(n); }
+function toUSD(v, key) { return key === 'td_canada' ? v * CAD_TO_USD : v; }
+
+function getTotal() {
+  let t = 0;
+  Object.entries(state.platforms).forEach(([k, p]) => {
+    if (!p) return;
+    p.forEach(a => { t += toUSD(a.balance, k); });
+  });
+  return t;
+}
+
+function getAllPositions() {
+  const map = {};
+  Object.entries(state.platforms).forEach(([k, p]) => {
+    if (!p) return;
+    const label = META[k].label;
+    p.forEach(acc => {
+      acc.positions.forEach(pos => {
+        const uv = toUSD(pos.value, k);
+        const ug = toUSD(pos.gain, k);
+        if (!map[pos.symbol]) map[pos.symbol] = { symbol: pos.symbol, name: pos.name, usdValue: 0, usdGain: 0, platforms: [] };
+        map[pos.symbol].usdValue += uv;
+        map[pos.symbol].usdGain += ug;
+        if (!map[pos.symbol].platforms.includes(label)) map[pos.symbol].platforms.push(label);
+      });
+    });
+  });
+  return Object.values(map).sort((a, b) => b.usdValue - a.usdValue);
+}
+
+function loadedPlatforms() {
+  return Object.entries(state.platforms).filter(([, p]) => p && p.length > 0);
+}
+
+// ── Render ─────────────────────────────────────────────────────────────────
+function render() {
+  const loaded = loadedPlatforms();
+  document.getElementById('loaded-badge').textContent = `${loaded.length}/3 loaded`;
+  ['import', 'overview', 'holdings'].forEach(v => {
+    const el = document.getElementById('nav-' + v);
+    el.classList.toggle('active', state.view === v);
+  });
+  const main = document.getElementById('main-content');
+  if (state.view === 'import') main.innerHTML = renderImport();
+  else if (state.view === 'overview') main.innerHTML = renderOverview();
+  else main.innerHTML = renderHoldings();
+  attachListeners();
+}
+
+// ── Import View ────────────────────────────────────────────────────────────
+function renderImport() {
+  const loaded = loadedPlatforms();
+  return `
+    <div>
+      <div style="margin-bottom:6px">
+        <div style="font-size:19px;font-weight:700;letter-spacing:-0.02em">Import Portfolios</div>
+        <div style="font-size:13px;color:var(--sub);margin-top:4px">Drop a CSV from each brokerage. Everything stays on your device.</div>
+      </div>
+    </div>
+    ${Object.entries(META).map(([key, meta]) => {
+      const p = state.platforms[key];
+      const hasData = p && p.length > 0;
+      const total = hasData ? p.reduce((s, a) => s + a.balance, 0) : 0;
+      return `
+      <div class="card import-platform" style="border-top-color:${meta.color}">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div>
+            <div style="font-weight:700;font-size:15px">${meta.flag} ${meta.label}</div>
+            <div style="font-size:11px;color:var(--sub);margin-top:2px">${key === 'td_canada' ? 'CAD → auto-converted to USD' : 'USD'}</div>
+          </div>
+          ${hasData ? '<span class="tag" style="background:#22c55e22;color:#22c55e">✓ Loaded</span>' : ''}
+        </div>
+        <label class="drop-zone ${hasData ? 'drop-zone-ok' : ''}" id="dz-${key}" style="${hasData ? 'border-color:#22c55e' : ''}">
+          <input type="file" accept=".csv,.txt" data-key="${key}" onchange="handleFile(this)"/>
+          <div class="drop-icon">${hasData ? '✅' : '📁'}</div>
+          <div class="drop-text" style="${hasData ? 'color:#22c55e' : ''}">${hasData ? 'Re-import CSV' : 'Tap to select CSV'}</div>
+          <div class="drop-sub">Exported from ${meta.label}</div>
+        </label>
+        <div id="status-${key}" class="import-status"></div>
+        <div class="guide-box">
+          <div class="guide-title">HOW TO EXPORT</div>
+          <ol>${GUIDES[key].map(s => `<li>${s}</li>`).join('')}</ol>
+        </div>
+        ${hasData ? `
+          <div class="imported-list">
+            ${p.map(acc => `
+              <div class="imported-row">
+                <span class="imported-name">${acc.name}</span>
+                <span class="mono" style="font-weight:600;color:${meta.color}">${meta.currency === 'CAD' ? 'CA$' : '$'}${fmt(acc.balance)}</span>
+              </div>`).join('')}
+          </div>` : ''}
+      </div>`;
+    }).join('')}
+    ${loaded.length > 0 ? `
+      <div style="text-align:center;padding:4px 0 8px">
+        <button class="btn-primary" onclick="setView('overview')">View Dashboard →</button>
+      </div>` : ''}
+  `;
+}
+
+// ── Overview View ──────────────────────────────────────────────────────────
+function renderOverview() {
+  const loaded = loadedPlatforms();
+  if (!loaded.length) return `
+    <div class="empty">
+      <div class="empty-icon">📥</div>
+      <div class="empty-title">No data yet</div>
+      <div class="empty-sub">Import CSVs from your brokerages to get started</div>
+      <button class="btn-primary" onclick="setView('import')">Go to Import →</button>
+    </div>`;
+
+  const total = getTotal();
+  const allPos = getAllPositions();
+  const donutSegs = loaded.map(([k, p]) => ({
+    label: META[k].label,
+    color: META[k].color,
+    pct: total ? (p.reduce((s, a) => s + toUSD(a.balance, k), 0) / total) * 100 : 0,
+  }));
+
+  // SVG donut
+  const r = 38, circ = 2 * Math.PI * r;
+  let off = 0, svgPaths = '';
+  const total2 = donutSegs.reduce((s, x) => s + x.pct, 0) || 1;
+  donutSegs.forEach(s => {
+    const d = (s.pct / total2) * circ;
+    svgPaths += `<circle cx="50" cy="50" r="${r}" fill="none" stroke="${s.color}" stroke-width="12"
+      stroke-dasharray="${d} ${circ - d}" stroke-dashoffset="${-off}" transform="rotate(-90 50 50)"/>`;
+    off += d;
+  });
+
+  return `
+    <div class="stat-grid">
+      <div class="stat-chip" style="grid-column:span 2">
+        <div class="stat-label">Total Portfolio (USD)</div>
+        <div class="stat-value" style="color:var(--accent)">${fmtD(total)}</div>
+        <div class="stat-sub">${loaded.map(([k]) => META[k].label).join(' · ')}</div>
+      </div>
+      <div class="stat-chip">
+        <div class="stat-label">Positions</div>
+        <div class="stat-value" style="color:#34D399">${allPos.length}</div>
+        <div class="stat-sub">unique holdings</div>
+      </div>
+      <div class="stat-chip">
+        <div class="stat-label">Top Holding</div>
+        <div class="stat-value" style="color:#FB923C;font-size:17px">${allPos[0]?.symbol || '—'}</div>
+        <div class="stat-sub">${allPos[0] ? fmtD(allPos[0].usdValue) : '—'}</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">ALLOCATION BY PLATFORM</div>
+      <div class="donut-wrap">
+        <svg viewBox="0 0 100 100" width="110" height="110">
+          <circle cx="50" cy="50" r="${r}" fill="none" stroke="#1E2130" stroke-width="12"/>
+          ${svgPaths}
+        </svg>
+      </div>
+      ${donutSegs.map(s => `
+        <div class="legend-row">
+          <div class="legend-label">
+            <div class="legend-dot" style="background:${s.color}"></div>
+            ${s.label}
+          </div>
+          <span class="legend-pct">${fmt(s.pct, 1)}%</span>
+        </div>
+        <div class="bar-wrap" style="margin-bottom:10px">
+          <div class="bar-fill" style="background:${s.color};width:${s.pct}%"></div>
+        </div>`).join('')}
+    </div>
+
+    <div class="section-label">PLATFORMS</div>
+    ${loaded.map(([key, p]) => {
+      const meta = META[key];
+      const isCAD = meta.currency === 'CAD';
+      const native = p.reduce((s, a) => s + a.balance, 0);
+      const usdBal = toUSD(native, key);
+      const isExp = state.expand === key;
+      return `
+        <div class="platform-card" style="border-left-color:${meta.color}" onclick="toggleExpand('${key}')">
+          <div class="platform-header">
+            <div>
+              <div class="platform-name">
+                <span style="font-size:17px">${meta.flag}</span>
+                ${meta.label}
+                <span class="tag" style="background:${meta.color}22;color:${meta.color}">${p.length} acct${p.length !== 1 ? 's' : ''}</span>
+              </div>
+              <div class="platform-sub">${p.map(a => a.name).join(' · ')}</div>
+            </div>
+            <div>
+              <div class="platform-value">${fmtD(usdBal)}</div>
+              ${isCAD ? `<div class="platform-cad">CA$${fmt(native)}</div>` : ''}
+            </div>
+          </div>
+          ${isExp ? p.map(acc => `
+            <div class="acct-row">
+              <div>
+                <div class="acct-name">${acc.name}</div>
+                <div class="acct-pos">${acc.positions.length} positions</div>
+              </div>
+              <div class="acct-bal">${isCAD ? 'CA$' : '$'}${fmt(acc.balance)}</div>
+            </div>`).join('') : ''}
+        </div>`;
+    }).join('')}
+
+    <div class="card">
+      <div class="card-title">TOP 5 HOLDINGS</div>
+      ${allPos.slice(0, 5).map((pos, i) => `
+        <div class="top5-row">
+          <div>
+            <div class="mono" style="font-weight:700;font-size:14px">${pos.symbol}</div>
+            <div style="font-size:11px;color:var(--sub)">${pos.platforms.join(', ')}</div>
+          </div>
+          <div style="text-align:right">
+            <div class="mono" style="font-weight:600;font-size:13px">${fmtD(pos.usdValue)}</div>
+            <div class="${pos.usdGain >= 0 ? 'pos' : 'neg'}" style="font-size:11px">
+              ${pos.usdGain >= 0 ? '+' : ''}${fmtD(pos.usdGain)}
+            </div>
+          </div>
+        </div>`).join('')}
+    </div>
+  `;
+}
+
+// ── Holdings View ──────────────────────────────────────────────────────────
+function renderHoldings() {
+  const loaded = loadedPlatforms();
+  if (!loaded.length) return `
+    <div class="empty">
+      <div class="empty-icon">📋</div>
+      <div class="empty-title">No data yet</div>
+      <div class="empty-sub">Import your CSVs first</div>
+      <button class="btn-primary" onclick="setView('import')">Go to Import →</button>
+    </div>`;
+
+  const total = getTotal();
+  let allPos = getAllPositions();
+  if (state.sortBy === 'gain') allPos.sort((a, b) => b.usdGain - a.usdGain);
+  else if (state.sortBy === 'symbol') allPos.sort((a, b) => a.symbol.localeCompare(b.symbol));
+
+  return `
+    <div class="sort-bar">
+      ${['value', 'gain', 'symbol'].map(s => `
+        <button class="sort-btn ${state.sortBy === s ? 'active' : ''}" onclick="setSort('${s}')">${s}</button>
+      `).join('')}
+    </div>
+    <div class="card" style="padding:14px 16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="font-weight:700;font-size:14px">${allPos.length} Holdings</div>
+        <div class="mono" style="font-size:13px;color:var(--accent);font-weight:700">${fmtD(total)}</div>
+      </div>
+      ${allPos.map((pos, i) => {
+        const cost = pos.usdValue - pos.usdGain;
+        const pct = cost ? (pos.usdGain / cost) * 100 : 0;
+        const plColors = pos.platforms.map(pl => Object.values(META).find(m => m.label === pl)?.color || '#888');
+        return `
+          <div class="holding-row">
+            <span class="h-rank">${i + 1}</span>
+            <div style="flex:1;min-width:0">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
+                <span class="h-sym">${pos.symbol}</span>
+                ${pos.platforms.map((pl, pi) => `<span class="tag" style="background:${plColors[pi]}22;color:${plColors[pi]}">${pl.split(' ')[0]}</span>`).join('')}
+              </div>
+              <div class="h-name">${pos.name}</div>
+            </div>
+            <div class="h-right">
+              <div class="h-val">${fmtD(pos.usdValue)}</div>
+              <div class="h-gain ${pos.usdGain >= 0 ? 'pos' : 'neg'}">${pos.usdGain >= 0 ? '+' : ''}${fmt(pct, 1)}%</div>
+            </div>
+          </div>`;
+      }).join('')}
+    </div>
+  `;
+}
+
+// ── Event handlers ─────────────────────────────────────────────────────────
+function setView(v) {
+  state.view = v;
+  render();
+}
+
+function setSort(s) {
+  state.sortBy = s;
+  render();
+}
+
+function toggleExpand(key) {
+  state.expand = state.expand === key ? null : key;
+  render();
+}
+
+function handleFile(input) {
+  const key = input.dataset.key;
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const accounts = PARSERS[key](e.target.result);
+      const n = accounts.reduce((s, a) => s + a.positions.length, 0);
+      state.platforms[key] = accounts;
+      render();
+      // Show status after render
+      const el = document.getElementById('status-' + key);
+      if (el) {
+        el.style.color = '#22c55e';
+        el.textContent = `✓ Imported ${n} position${n !== 1 ? 's' : ''} across ${accounts.length} account${accounts.length !== 1 ? 's' : ''}`;
+      }
+    } catch (err) {
+      const el = document.getElementById('status-' + key);
+      if (el) {
+        el.style.color = '#ef4444';
+        el.textContent = '✗ ' + (err.message || 'Parse failed — check format guide');
+      }
+    }
+  };
+  reader.readAsText(file);
+}
+
+function attachListeners() {
+  // File inputs are handled inline via onchange
+}
+
+// ── Boot ───────────────────────────────────────────────────────────────────
+render();
+</script>
+</body>
+</html>
