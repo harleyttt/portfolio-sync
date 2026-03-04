@@ -10,314 +10,175 @@
 <title>PortfolioSync</title>
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%236264A7'/%3E%3Ctext x='50' y='66' font-size='48' text-anchor='middle' fill='white'%3E%24%3C/text%3E%3C/svg%3E"/>
 <style>
-/* ── Teams Design Tokens ─────────────────────────────────────── */
 :root {
-  /* Teams palette */
-  --teams-purple:     #6264A7;
-  --teams-purple-dk:  #464775;
-  --teams-purple-lt:  #E8EAF6;
-  --teams-purple-bg:  #F0F0FA;
-  --teams-blue:       #106EBE;
-  --teams-blue-lt:    #DEECF9;
-
-  /* Surfaces */
-  --bg:           #F5F5F7;
-  --surface:      #FFFFFF;
-  --surface2:     #F8F8FC;
-  --surface3:     #EDEDF5;
-  --header-bg:    #6264A7;
-
-  /* Text */
-  --text:         #242424;
-  --text2:        #616161;
-  --text3:        #9E9E9E;
-  --text-on-hdr:  #FFFFFF;
-
-  /* Semantic */
-  --green:        #107C10;
-  --green-bg:     #DFF6DD;
-  --red:          #C4314B;
-  --red-bg:       #FCE4E8;
-  --orange:       #7A5A00;
-  --orange-bg:    #FFF4CE;
-  --blue:         #106EBE;
-  --blue-bg:      #DEECF9;
-
-  /* Borders & shadows */
-  --border:       #E0E0E0;
-  --shadow-sm:    0 1px 4px rgba(0,0,0,.10), 0 0 1px rgba(0,0,0,.06);
-  --shadow-md:    0 2px 8px rgba(0,0,0,.12), 0 0 2px rgba(0,0,0,.06);
-  --radius:       12px;
-  --radius-sm:    8px;
-
-  /* Safe areas */
-  --safe-t: env(safe-area-inset-top,    47px);
+  --teams-purple:    #6264A7;
+  --teams-purple-dk: #464775;
+  --teams-purple-lt: #E8EAF6;
+  --teams-purple-bg: #F0F0FA;
+  --bg:          #F5F5F7;
+  --surface:     #FFFFFF;
+  --surface2:    #F8F8FC;
+  --surface3:    #EDEDF5;
+  --header-bg:   #6264A7;
+  --text:        #242424;
+  --text2:       #616161;
+  --text3:       #9E9E9E;
+  --green:       #107C10; --green-bg:  #DFF6DD;
+  --red:         #C4314B; --red-bg:    #FCE4E8;
+  --orange:      #7A5A00; --orange-bg: #FFF4CE;
+  --blue:        #106EBE; --blue-bg:   #DEECF9;
+  --border:      #E0E0E0;
+  --shadow-sm:   0 1px 4px rgba(0,0,0,.10), 0 0 1px rgba(0,0,0,.06);
+  --shadow-md:   0 2px 8px rgba(0,0,0,.12), 0 0 2px rgba(0,0,0,.06);
+  --radius:      12px; --radius-sm: 8px;
+  --safe-t: env(safe-area-inset-top, 47px);
   --safe-b: env(safe-area-inset-bottom, 34px);
 }
-
-/* ── Reset ───────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
 html, body { height:100%; overflow:hidden; background:var(--bg); }
-body {
-  color:var(--text);
-  font-family:-apple-system,'Segoe UI','Helvetica Neue',sans-serif;
-  font-size:15px;
-  -webkit-font-smoothing:antialiased;
-}
-
-/* ── Shell ───────────────────────────────────────────────────── */
+body { color:var(--text); font-family:-apple-system,'Segoe UI','Helvetica Neue',sans-serif; font-size:15px; -webkit-font-smoothing:antialiased; }
 #app { display:flex; flex-direction:column; height:100dvh; }
 
-/* ── Header ──────────────────────────────────────────────────── */
-.app-header {
-  background:var(--header-bg);
-  padding-top:var(--safe-t);
-  flex-shrink:0;
-  box-shadow:0 2px 8px rgba(98,100,167,.35);
-  position:relative; z-index:10;
-}
-.app-header-inner {
-  height:52px; display:flex; align-items:center; justify-content:space-between;
-  padding:0 16px;
-}
+/* ── Header ── */
+.app-header { background:var(--header-bg); padding-top:var(--safe-t); flex-shrink:0; box-shadow:0 2px 8px rgba(98,100,167,.35); position:relative; z-index:10; }
+.app-header-inner { height:52px; display:flex; align-items:center; justify-content:space-between; padding:0 16px; }
 .app-header-logo { display:flex; align-items:center; gap:10px; }
-.app-header-icon {
-  width:34px; height:34px; border-radius:9px;
-  background:rgba(255,255,255,.2);
-  display:flex; align-items:center; justify-content:center;
-  font-size:18px; font-weight:700; color:#fff;
-}
+.app-header-icon { width:34px; height:34px; border-radius:9px; background:rgba(255,255,255,.2); display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:700; color:#fff; }
 .app-header-title { font-size:18px; font-weight:700; color:#fff; letter-spacing:-.01em; }
-.app-header-badge {
-  background:rgba(255,255,255,.18);
-  color:#fff; font-size:12px; font-weight:600;
-  padding:4px 10px; border-radius:20px;
-}
+.app-header-badge { background:rgba(255,255,255,.18); color:#fff; font-size:12px; font-weight:600; padding:4px 10px; border-radius:20px; }
 
-/* ── Tab Bar ─────────────────────────────────────────────────── */
-.tab-bar {
-  display:flex; background:var(--surface);
-  border-top:1px solid var(--border);
-  padding-bottom:var(--safe-b);
-  flex-shrink:0;
-  box-shadow:0 -1px 4px rgba(0,0,0,.06);
-}
-.tab-btn {
-  flex:1; display:flex; flex-direction:column; align-items:center;
-  gap:3px; padding:9px 0 4px;
-  border:none; background:none; cursor:pointer;
-  color:var(--text3); font-size:11px; font-weight:500; letter-spacing:.01em;
-  transition:color .15s;
-}
+/* ── Tab Bar ── */
+.tab-bar { display:flex; background:var(--surface); border-top:1px solid var(--border); padding-bottom:var(--safe-b); flex-shrink:0; box-shadow:0 -1px 4px rgba(0,0,0,.06); }
+.tab-btn { flex:1; display:flex; flex-direction:column; align-items:center; gap:2px; padding:9px 0 4px; border:none; background:none; cursor:pointer; color:var(--text3); font-size:10px; font-weight:500; letter-spacing:.01em; transition:color .15s; }
 .tab-btn.active { color:var(--teams-purple); }
 .tab-btn.active .tab-icon-wrap { background:var(--teams-purple-bg); }
-.tab-icon-wrap {
-  width:32px; height:28px; border-radius:14px;
-  display:flex; align-items:center; justify-content:center;
-  transition:background .15s; margin-bottom:1px;
-}
+.tab-icon-wrap { width:32px; height:28px; border-radius:14px; display:flex; align-items:center; justify-content:center; transition:background .15s; margin-bottom:1px; }
 .tab-icon { font-size:18px; line-height:1; }
 
-/* ── Scroll ──────────────────────────────────────────────────── */
-.content {
-  flex:1; overflow-y:auto; overflow-x:hidden;
-  -webkit-overflow-scrolling:touch;
-  background:var(--bg);
-}
-
-/* ── Page wrapper ────────────────────────────────────────────── */
-.page { padding-bottom:24px; }
-.page-title { font-size:24px; font-weight:700; color:var(--text); letter-spacing:-.02em; padding:20px 16px 4px; }
+/* ── Content ── */
+.content { flex:1; overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch; background:var(--bg); }
+.page { padding-bottom:28px; }
+.page-title { font-size:24px; font-weight:700; letter-spacing:-.02em; padding:20px 16px 4px; }
 .page-sub   { font-size:14px; color:var(--text2); padding:0 16px 20px; line-height:1.5; }
+.section-label { font-size:12px; font-weight:600; color:var(--teams-purple); text-transform:uppercase; letter-spacing:.08em; padding:20px 16px 8px; }
 
-/* ── Section ─────────────────────────────────────────────────── */
-.section-label {
-  font-size:12px; font-weight:600; color:var(--teams-purple);
-  text-transform:uppercase; letter-spacing:.08em;
-  padding:20px 16px 8px;
-}
+/* ── Cards ── */
+.card { margin:0 16px; background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow-sm); overflow:hidden; }
+.card+.card { margin-top:10px; }
 
-/* ── Card ────────────────────────────────────────────────────── */
-.card {
-  margin:0 16px;
-  background:var(--surface);
-  border-radius:var(--radius);
-  box-shadow:var(--shadow-sm);
-  overflow:hidden;
-}
-.card + .card { margin-top:10px; }
-
-/* ── Platform header inside card ─────────────────────────────── */
-.platform-header {
-  display:flex; align-items:center; gap:12px;
-  padding:14px 16px; border-bottom:1px solid var(--border);
-}
-.platform-icon {
-  width:40px; height:40px; border-radius:10px;
-  display:flex; align-items:center; justify-content:center;
-  font-size:20px; flex-shrink:0;
-}
-.platform-title { font-size:16px; font-weight:600; color:var(--text); }
-.platform-sub   { font-size:13px; color:var(--text2); margin-top:2px; }
+/* ── Platform import card ── */
+.platform-header { display:flex; align-items:center; gap:12px; padding:14px 16px; border-bottom:1px solid var(--border); }
+.platform-icon { width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
+.platform-title { font-size:16px; font-weight:600; }
+.platform-sub { font-size:13px; color:var(--text2); margin-top:2px; }
 .platform-badge { margin-left:auto; flex-shrink:0; }
 
-/* ── Drop zone — clean button, no dashed boxes ───────────────── */
+/* ── Drop zone ── */
 .drop-zone-wrap { padding:10px 14px; border-bottom:1px solid var(--border); }
-.drop-zone {
-  border:none; border-radius:10px;
-  padding:12px 16px; cursor:pointer; position:relative;
-  background:var(--teams-purple-lt);
-  display:flex; align-items:center; justify-content:center; gap:8px;
-  transition:background .15s;
-}
+.drop-zone { border:none; border-radius:10px; padding:12px 16px; cursor:pointer; position:relative; background:var(--teams-purple-lt); display:flex; align-items:center; justify-content:center; gap:8px; transition:background .15s; }
 .drop-zone:active { background:var(--surface3); }
-.drop-zone input  { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
-.drop-zone-icon   { font-size:18px; line-height:1; }
-.drop-zone-text   { font-size:14px; font-weight:600; color:var(--teams-purple); }
-.drop-zone-sub    { display:none; }
+.drop-zone input { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+.drop-zone-icon { font-size:18px; line-height:1; }
+.drop-zone-text { font-size:14px; font-weight:600; color:var(--teams-purple); }
 
-/* ── Import status ───────────────────────────────────────────── */
-.import-status { padding:6px 16px 0; font-size:13px; font-weight:500; }
-
-/* ── File list ───────────────────────────────────────────────── */
+/* ── File list ── */
 .file-list { padding:8px 14px; border-bottom:1px solid var(--border); display:flex; flex-direction:column; gap:6px; }
-.file-row {
-  display:flex; align-items:center; gap:10px;
-  background:var(--surface2); border-radius:8px; padding:9px 12px;
-}
+.file-row { display:flex; align-items:center; gap:10px; background:var(--surface2); border-radius:8px; padding:9px 12px; }
 .file-icon { font-size:18px; flex-shrink:0; }
 .file-name { flex:1; font-size:13px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .file-accts { font-size:12px; color:var(--text2); margin-top:1px; }
-.file-remove {
-  width:22px; height:22px; border-radius:11px;
-  background:var(--border); border:none; cursor:pointer;
-  display:flex; align-items:center; justify-content:center;
-  color:var(--text2); font-size:12px; flex-shrink:0;
-}
+.file-remove { width:22px; height:22px; border-radius:11px; background:var(--border); border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--text2); font-size:12px; flex-shrink:0; }
 
-/* ── Account rows ────────────────────────────────────────────── */
-.acct-rows { padding:4px 0; border-bottom:1px solid var(--border); }
-.acct-row {
-  display:flex; align-items:center; justify-content:space-between;
-  padding:10px 16px;
-}
-.acct-row + .acct-row { border-top:1px solid var(--border); }
-.acct-name  { font-size:14px; font-weight:500; color:var(--text); }
-.acct-pos   { font-size:12px; color:var(--text3); margin-top:1px; }
-.acct-bal   { font-size:15px; font-weight:600; font-variant-numeric:tabular-nums; text-align:right; }
-.acct-sub   { font-size:11px; color:var(--text3); text-align:right; margin-top:1px; }
+/* ── Account rows ── */
+.acct-rows { border-bottom:1px solid var(--border); }
+.acct-row { display:flex; align-items:center; justify-content:space-between; padding:10px 16px; }
+.acct-row+.acct-row { border-top:1px solid var(--border); }
+.acct-name { font-size:14px; font-weight:500; }
+.acct-pos  { font-size:12px; color:var(--text3); margin-top:1px; }
+.acct-bal  { font-size:15px; font-weight:600; font-variant-numeric:tabular-nums; text-align:right; }
+.acct-sub  { font-size:11px; color:var(--text3); text-align:right; margin-top:1px; }
+.cur-tag   { font-size:10px; font-weight:700; padding:1px 5px; border-radius:4px; margin-left:5px; vertical-align:middle; }
 
-/* ── How-to guide ────────────────────────────────────────────── */
+/* ── Guide ── */
 .guide { padding:12px 16px 14px; }
 .guide-title { font-size:11px; font-weight:700; color:var(--text3); text-transform:uppercase; letter-spacing:.07em; margin-bottom:8px; }
-.guide ol   { padding-left:18px; }
-.guide li   { font-size:13px; color:var(--text2); line-height:1.85; }
+.guide ol { padding-left:18px; }
+.guide li { font-size:13px; color:var(--text2); line-height:1.85; }
 
-/* ── CTA ─────────────────────────────────────────────────────── */
-.cta { margin:20px 16px 0; }
-.cta-btn {
-  width:100%; padding:15px;
-  background:var(--teams-purple); color:#fff;
-  border:none; border-radius:var(--radius);
-  font-size:16px; font-weight:600; cursor:pointer;
-  box-shadow:0 2px 8px rgba(98,100,167,.4);
-  letter-spacing:-.01em; transition:background .15s;
+/* ── Storage banner ── */
+.storage-banner {
+  margin:0 16px 0;
+  background:var(--green-bg); border-radius:var(--radius);
+  padding:12px 16px; display:flex; align-items:center; gap:10px;
 }
+.storage-banner.warn { background:var(--orange-bg); }
+.storage-banner-icon { font-size:20px; flex-shrink:0; }
+.storage-banner-text { flex:1; font-size:13px; color:var(--text); line-height:1.4; }
+.storage-banner-btn {
+  font-size:12px; font-weight:700; color:var(--red);
+  background:none; border:none; cursor:pointer; flex-shrink:0; padding:4px;
+}
+
+/* ── CTA ── */
+.cta { margin:20px 16px 0; }
+.cta-btn { width:100%; padding:15px; background:var(--teams-purple); color:#fff; border:none; border-radius:var(--radius); font-size:16px; font-weight:600; cursor:pointer; box-shadow:0 2px 8px rgba(98,100,167,.4); letter-spacing:-.01em; transition:background .15s; }
 .cta-btn:active { background:var(--teams-purple-dk); }
 
-/* ── Badge / pill ────────────────────────────────────────────── */
-.badge {
-  display:inline-flex; align-items:center;
-  padding:3px 9px; border-radius:20px;
-  font-size:12px; font-weight:600;
-}
+/* ── Badge / pill ── */
+.badge { display:inline-flex; align-items:center; padding:3px 9px; border-radius:20px; font-size:12px; font-weight:600; }
 .badge-green  { background:var(--green-bg);  color:var(--green);  }
 .badge-red    { background:var(--red-bg);    color:var(--red);    }
 .badge-blue   { background:var(--blue-bg);   color:var(--blue);   }
-.badge-orange { background:var(--orange-bg); color:var(--orange); }
 .badge-purple { background:var(--teams-purple-lt); color:var(--teams-purple-dk); }
-.cur-tag {
-  font-size:10px; font-weight:700; padding:1px 5px; border-radius:4px; margin-left:5px; vertical-align:middle;
-}
 
-/* ── Overview hero ───────────────────────────────────────────── */
-.hero-card {
-  margin:12px 16px 0;
-  background:var(--header-bg);
-  border-radius:var(--radius);
-  padding:20px;
-  box-shadow:var(--shadow-md);
-}
+/* ── Hero card ── */
+.hero-card { margin:12px 16px 0; background:var(--header-bg); border-radius:var(--radius); padding:20px; box-shadow:var(--shadow-md); }
 .hero-label { font-size:13px; color:rgba(255,255,255,.7); margin-bottom:4px; font-weight:500; }
 .hero-value { font-size:38px; font-weight:700; color:#fff; letter-spacing:-.03em; font-variant-numeric:tabular-nums; line-height:1.05; }
 .hero-row   { display:flex; align-items:center; gap:8px; margin-top:8px; }
 .hero-sub   { font-size:13px; color:rgba(255,255,255,.65); }
 
-/* ── Stats strip ─────────────────────────────────────────────── */
+/* ── Stats strip ── */
 .stats-strip { display:flex; gap:10px; margin:10px 16px 0; }
-.stat-tile {
-  flex:1; background:var(--surface); border-radius:var(--radius-sm);
-  padding:12px; box-shadow:var(--shadow-sm);
-}
+.stat-tile { flex:1; background:var(--surface); border-radius:var(--radius-sm); padding:12px; box-shadow:var(--shadow-sm); }
 .stat-label { font-size:11px; color:var(--text3); font-weight:500; margin-bottom:3px; }
 .stat-value { font-size:19px; font-weight:700; font-variant-numeric:tabular-nums; letter-spacing:-.02em; }
 .stat-sub   { font-size:11px; color:var(--text3); margin-top:2px; }
 
-/* ── Donut card ──────────────────────────────────────────────── */
-.donut-card {
-  margin:10px 16px 0;
-  background:var(--surface);
-  border-radius:var(--radius);
-  box-shadow:var(--shadow-sm);
-  padding:16px;
-}
-.donut-card-title { font-size:14px; font-weight:600; color:var(--text); margin-bottom:14px; }
+/* ── Donut ── */
+.donut-card { margin:10px 16px 0; background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow-sm); padding:16px; }
+.donut-card-title { font-size:14px; font-weight:600; margin-bottom:14px; }
 .donut-layout { display:flex; align-items:center; gap:16px; }
 .donut-legend { flex:1; }
-.donut-leg    { margin-bottom:10px; }
+.donut-leg { margin-bottom:10px; }
 .donut-leg:last-child { margin-bottom:0; }
 .donut-leg-row { display:flex; align-items:center; gap:8px; margin-bottom:4px; }
 .donut-leg-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
-.donut-leg-name { flex:1; font-size:13px; color:var(--text); }
+.donut-leg-name { flex:1; font-size:13px; }
 .donut-leg-pct  { font-size:13px; font-weight:600; color:var(--text2); font-variant-numeric:tabular-nums; }
 .donut-bar { height:4px; border-radius:2px; background:var(--border); }
 .donut-bar-fill { height:100%; border-radius:2px; }
 
-/* ── Platform rows (overview) ────────────────────────────────── */
-.platform-row {
-  display:flex; align-items:center; padding:13px 16px; gap:12px;
-  cursor:pointer; transition:background .1s;
-}
+/* ── Platform rows (overview) ── */
+.platform-row { display:flex; align-items:center; padding:13px 16px; gap:12px; cursor:pointer; transition:background .1s; }
 .platform-row:active { background:var(--bg); }
-.platform-row + .platform-row { border-top:1px solid var(--border); }
-.pl-icon { width:36px; height:36px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
-.pl-body { flex:1; min-width:0; }
-.pl-name { font-size:15px; font-weight:600; color:var(--text); }
+.platform-row+.platform-row { border-top:1px solid var(--border); }
+.pl-icon   { width:36px; height:36px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+.pl-body   { flex:1; min-width:0; }
+.pl-name   { font-size:15px; font-weight:600; }
 .pl-detail { font-size:12px; color:var(--text2); margin-top:2px; }
-.pl-right { text-align:right; }
-.pl-value { font-size:15px; font-weight:600; font-variant-numeric:tabular-nums; }
-.pl-sub   { font-size:12px; color:var(--text3); margin-top:1px; font-variant-numeric:tabular-nums; }
-.chevron  { color:var(--text3); font-size:12px; margin-left:6px; flex-shrink:0; transition:transform .2s; }
+.pl-right  { text-align:right; }
+.pl-value  { font-size:15px; font-weight:600; font-variant-numeric:tabular-nums; }
+.chevron   { color:var(--text3); font-size:12px; margin-left:6px; flex-shrink:0; transition:transform .2s; }
 .chevron.open { transform:rotate(180deg); }
+.sub-acct-row { display:flex; align-items:center; justify-content:space-between; padding:10px 16px 10px 64px; border-top:1px solid var(--border); background:var(--surface2); }
+.sub-acct-name { font-size:14px; }
+.sub-acct-val  { font-size:14px; font-weight:500; font-variant-numeric:tabular-nums; }
+.sub-acct-sub  { font-size:11px; color:var(--text3); margin-top:1px; }
 
-.sub-acct-row {
-  display:flex; align-items:center; justify-content:space-between;
-  padding:10px 16px 10px 64px; border-top:1px solid var(--border);
-  background:var(--surface2);
-}
-.sub-acct-name  { font-size:14px; color:var(--text); }
-.sub-acct-right { text-align:right; }
-.sub-acct-val   { font-size:14px; font-weight:500; font-variant-numeric:tabular-nums; }
-.sub-acct-sub   { font-size:11px; color:var(--text3); margin-top:1px; }
-
-/* ── Top holdings card ───────────────────────────────────────── */
-.holding-row {
-  display:flex; align-items:center; padding:11px 16px; gap:12px;
-  position:relative;
-}
-.holding-row+.holding-row::before {
-  content:''; position:absolute; top:0; left:16px; right:0; height:1px; background:var(--border);
-}
+/* ── Holdings ── */
+.holding-row { display:flex; align-items:center; padding:11px 16px; gap:12px; position:relative; }
+.holding-row+.holding-row::before { content:''; position:absolute; top:0; left:16px; right:0; height:1px; background:var(--border); }
 .h-num  { width:22px; flex-shrink:0; font-size:12px; color:var(--text3); text-align:center; font-variant-numeric:tabular-nums; }
 .h-sym  { width:58px; flex-shrink:0; font-size:14px; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .h-name { flex:1; font-size:13px; color:var(--text2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
@@ -325,39 +186,89 @@ body {
 .h-val  { font-size:14px; font-weight:600; font-variant-numeric:tabular-nums; }
 .h-pct  { font-size:12px; margin-top:1px; font-variant-numeric:tabular-nums; }
 
-/* ── Holdings page ───────────────────────────────────────────── */
+/* ── Seg control ── */
 .seg-row { display:flex; gap:6px; margin:12px 16px 0; }
-.seg-btn {
-  flex:1; padding:8px 4px; border-radius:8px;
-  border:1.5px solid var(--border);
-  background:var(--surface); color:var(--text2);
-  font-size:13px; font-weight:500; cursor:pointer; transition:all .15s;
+.seg-btn { flex:1; padding:8px 4px; border-radius:8px; border:1.5px solid var(--border); background:var(--surface); color:var(--text2); font-size:13px; font-weight:500; cursor:pointer; transition:all .15s; }
+.seg-btn.active { background:var(--teams-purple-lt); color:var(--teams-purple-dk); border-color:var(--teams-purple); font-weight:700; }
+
+/* ── AI Briefing ── */
+.briefing-hero {
+  margin:12px 16px 0;
+  background:linear-gradient(135deg, #464775 0%, #6264A7 60%, #7B6FBB 100%);
+  border-radius:var(--radius); padding:20px; box-shadow:var(--shadow-md);
 }
-.seg-btn.active {
-  background:var(--teams-purple-lt); color:var(--teams-purple-dk);
-  border-color:var(--teams-purple); font-weight:700;
+.briefing-date  { font-size:12px; color:rgba(255,255,255,.65); margin-bottom:4px; font-weight:500; }
+.briefing-title { font-size:20px; font-weight:700; color:#fff; letter-spacing:-.01em; margin-bottom:4px; }
+.briefing-sub   { font-size:13px; color:rgba(255,255,255,.7); }
+
+.api-key-card { margin:12px 16px 0; background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow-sm); padding:16px; }
+.api-key-label { font-size:13px; font-weight:600; color:var(--text); margin-bottom:4px; }
+.api-key-sub   { font-size:12px; color:var(--text3); margin-bottom:10px; line-height:1.5; }
+.api-key-row   { display:flex; gap:8px; align-items:center; }
+.api-key-input {
+  flex:1; padding:10px 12px; border:1.5px solid var(--border); border-radius:8px;
+  font-size:14px; background:var(--surface2); color:var(--text);
+  outline:none; transition:border-color .15s;
+}
+.api-key-input:focus { border-color:var(--teams-purple); }
+.api-key-save {
+  padding:10px 16px; background:var(--teams-purple); color:#fff;
+  border:none; border-radius:8px; font-size:14px; font-weight:600; cursor:pointer;
 }
 
-/* ── Empty ───────────────────────────────────────────────────── */
+.refresh-btn {
+  width:100%; padding:13px; margin:12px 0 0;
+  background:var(--teams-purple); color:#fff;
+  border:none; border-radius:var(--radius);
+  font-size:15px; font-weight:600; cursor:pointer;
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  transition:background .15s;
+}
+.refresh-btn:active { background:var(--teams-purple-dk); }
+.refresh-btn:disabled { background:var(--text3); cursor:not-allowed; }
+
+.briefing-content { margin:12px 16px 0; background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow-sm); overflow:hidden; }
+.briefing-section { padding:14px 16px; border-bottom:1px solid var(--border); }
+.briefing-section:last-child { border-bottom:none; }
+.briefing-section-title { font-size:12px; font-weight:700; color:var(--teams-purple); text-transform:uppercase; letter-spacing:.07em; margin-bottom:8px; }
+.briefing-section-body  { font-size:14px; color:var(--text); line-height:1.65; }
+
+.news-item { padding:12px 16px; border-bottom:1px solid var(--border); }
+.news-item:last-child { border-bottom:none; }
+.news-ticker { font-size:11px; font-weight:700; color:var(--teams-purple); margin-bottom:4px; text-transform:uppercase; letter-spacing:.05em; }
+.news-headline { font-size:14px; font-weight:600; color:var(--text); line-height:1.4; margin-bottom:3px; }
+.news-body { font-size:13px; color:var(--text2); line-height:1.55; }
+.news-sentiment {
+  display:inline-flex; align-items:center; gap:4px;
+  font-size:11px; font-weight:600; margin-top:6px;
+  padding:2px 8px; border-radius:10px;
+}
+
+.loading-card { margin:12px 16px 0; background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow-sm); padding:24px 16px; text-align:center; }
+.loading-spinner { font-size:32px; animation:spin 1.5s linear infinite; display:inline-block; margin-bottom:10px; }
+@keyframes spin { to { transform:rotate(360deg); } }
+.loading-text  { font-size:15px; font-weight:600; color:var(--text); margin-bottom:4px; }
+.loading-sub   { font-size:13px; color:var(--text2); }
+.loading-steps { margin-top:14px; text-align:left; }
+.loading-step  { font-size:13px; color:var(--text3); padding:4px 0; display:flex; align-items:center; gap:8px; }
+.loading-step.done { color:var(--green); }
+.loading-step.active { color:var(--teams-purple); font-weight:600; }
+
+.briefing-footer { margin:8px 16px 0; font-size:11px; color:var(--text3); text-align:center; padding:8px; line-height:1.5; }
+
+/* ── Empty ── */
 .empty { padding:70px 32px; text-align:center; }
-.empty-icon { font-size:52px; margin-bottom:16px; }
+.empty-icon  { font-size:52px; margin-bottom:16px; }
 .empty-title { font-size:20px; font-weight:700; margin-bottom:8px; letter-spacing:-.02em; }
 .empty-body  { font-size:14px; color:var(--text2); line-height:1.5; margin-bottom:24px; }
-.empty-btn {
-  display:inline-block; background:var(--teams-purple); color:#fff;
-  padding:13px 28px; border-radius:12px;
-  font-size:16px; font-weight:600; border:none; cursor:pointer;
-}
+.empty-btn   { display:inline-block; background:var(--teams-purple); color:#fff; padding:13px 28px; border-radius:12px; font-size:16px; font-weight:600; border:none; cursor:pointer; }
 
-/* ── Utils ───────────────────────────────────────────────────── */
-.pos { color:var(--green); }
-.neg { color:var(--red);   }
-.mono { font-variant-numeric:tabular-nums; }
+.import-status { padding:6px 16px 0; font-size:13px; font-weight:500; }
+.pos { color:var(--green); } .neg { color:var(--red); }
 </style>
 </head>
 <body>
 <div id="app">
-  <!-- Header -->
   <div class="app-header">
     <div class="app-header-inner">
       <div class="app-header-logo">
@@ -367,23 +278,19 @@ body {
       <div class="app-header-badge" id="loaded-badge">0 / 3</div>
     </div>
   </div>
-
-  <!-- Content -->
   <div class="content" id="main-content"></div>
-
-  <!-- Tab bar -->
   <nav class="tab-bar">
-    <button class="tab-btn active" id="nav-import" onclick="setView('import')">
-      <div class="tab-icon-wrap"><span class="tab-icon">⬇</span></div>
-      Import
+    <button class="tab-btn active" id="nav-import"   onclick="setView('import')">
+      <div class="tab-icon-wrap"><span class="tab-icon">⬇</span></div>Import
     </button>
     <button class="tab-btn" id="nav-overview" onclick="setView('overview')">
-      <div class="tab-icon-wrap"><span class="tab-icon">◎</span></div>
-      Overview
+      <div class="tab-icon-wrap"><span class="tab-icon">◎</span></div>Overview
     </button>
     <button class="tab-btn" id="nav-holdings" onclick="setView('holdings')">
-      <div class="tab-icon-wrap"><span class="tab-icon">≡</span></div>
-      Holdings
+      <div class="tab-icon-wrap"><span class="tab-icon">≡</span></div>Holdings
+    </button>
+    <button class="tab-btn" id="nav-briefing" onclick="setView('briefing')">
+      <div class="tab-icon-wrap"><span class="tab-icon">✦</span></div>AI Briefing
     </button>
   </nav>
 </div>
@@ -393,6 +300,9 @@ body {
 //  CONSTANTS
 // ════════════════════════════════════════════════════════════
 const CAD_TO_USD = 0.74;
+const STORAGE_KEY = 'portfoliosync_v2';
+const BRIEFING_KEY = 'portfoliosync_briefing_v1';
+const APIKEY_KEY  = 'portfoliosync_apikey';
 
 const META = {
   fidelity:  { label:'Fidelity',       flag:'🇺🇸', color:'#107C10', bg:'#DFF6DD' },
@@ -401,30 +311,24 @@ const META = {
 };
 
 const GUIDES = {
-  fidelity: [
-    'Log in → Accounts & Trade → Portfolio',
-    'Click the Positions tab',
-    'Click ⬇ Download icon (top-right of page)',
-    'Save as .CSV — repeat for each account'
-  ],
-  etrade: [
-    'Log in → go to Portfolios page',
-    'Click Positions tab, select account',
-    'Click Download → Collapsed View, All Positions',
-    'Save as .CSV — repeat for each account'
-  ],
-  td_canada: [
-    'Log in to TD WebBroker',
-    'Go to Accounts → Account Holdings',
-    'Select account from the dropdown',
-    'Scroll down → "Download to: Spreadsheet (.CSV)"',
-    'Upload all CSVs here — USD & CAD auto-detected'
-  ]
+  fidelity: ['Log in → Accounts & Trade → Portfolio','Click the Positions tab','Click ⬇ Download icon (top-right of page)','Save as .CSV — repeat for each account'],
+  etrade:   ['Log in → go to Portfolios page','Click Positions tab, select account','Click Download → Collapsed View, All Positions','Save as .CSV — repeat for each account'],
+  td_canada:['Log in to TD WebBroker','Go to Accounts → Account Holdings','Select account from the dropdown','Scroll down → "Download to: Spreadsheet (.CSV)"','Upload all CSVs — USD & CAD auto-detected']
 };
 
+// ════════════════════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════════════════════
 const state = {
-  view:'import', sortBy:'value', expand:null,
-  files:{ fidelity:[], etrade:[], td_canada:[] }
+  view: 'import',
+  sortBy: 'value',
+  expand: null,
+  files: { fidelity:[], etrade:[], td_canada:[] },
+  briefing: null,      // cached briefing object
+  briefingLoading: false,
+  briefingError: null,
+  apiKey: '',
+  showApiKey: false
 };
 
 // ════════════════════════════════════════════════════════════
@@ -434,18 +338,11 @@ function parseRows(text){
   text=text.replace(/^\uFEFF/,'').replace(/\r\n/g,'\n').replace(/\r/g,'\n');
   return text.split('\n').map(line=>{
     const cols=[]; let cur='',inQ=false;
-    for(const c of line){
-      if(c==='"') inQ=!inQ;
-      else if(c===','&&!inQ){cols.push(cur.trim());cur='';}
-      else cur+=c;
-    }
+    for(const c of line){ if(c==='"') inQ=!inQ; else if(c===','&&!inQ){cols.push(cur.trim());cur='';} else cur+=c; }
     cols.push(cur.trim()); return cols;
   });
 }
-function num(s){
-  if(!s||s===''||s==='--'||s==='n/a'||s==='N/A') return 0;
-  return parseFloat(String(s).replace(/[$,%\s]/g,''))||0;
-}
+function num(s){ if(!s||s===''||s==='--'||s==='n/a'||s==='N/A') return 0; return parseFloat(String(s).replace(/[$,%\s]/g,''))||0; }
 function findCol(h,ks){ for(const k of [].concat(ks)){const i=h.findIndex(x=>x.includes(k));if(i!==-1)return i;} return -1; }
 function norm(r){ return r.map(h=>h.toLowerCase().replace(/[^a-z0-9]/g,'_')); }
 
@@ -513,10 +410,9 @@ function parseTDCanada(text){
       }
       const hi=j; if(hi>=rows.length){i=j+1;continue;}
       const h=norm(rows[hi]);
-      const iSym=findCol(h,['symbol','ticker']),iMkt=findCol(h,['market']),
-            iDesc=findCol(h,['description']),iQty=findCol(h,['quantity','qty','units']),
-            iPx=findCol(h,['price']),iVal=findCol(h,['market_value']),
-            iGain=findCol(h,['unrealized_']);
+      const iSym=findCol(h,['symbol','ticker']),iMkt=findCol(h,['market']),iDesc=findCol(h,['description']),
+            iQty=findCol(h,['quantity','qty','units']),iPx=findCol(h,['price']),
+            iVal=findCol(h,['market_value']),iGain=findCol(h,['unrealized_']);
       const positions=[]; let balance=cash,k=hi+1;
       while(k<rows.length){
         if(rows[k][0]&&/^as of date/i.test(rows[k][0])) break;
@@ -527,15 +423,11 @@ function parseTDCanada(text){
         const mkt=iMkt!==-1?(r[iMkt]||'').trim().toUpperCase():'';
         const cur=mkt==='CA'?'CAD':'USD';
         const v=num(r[iVal]),g=num(r[iGain]);
-        if(v>0||sym){
-          positions.push({symbol:sym,name:r[iDesc]||sym,shares:num(r[iQty]),price:iPx!==-1?num(r[iPx]):0,value:v,gain:g,currency:cur});
-          balance+=v;
-        }
+        if(v>0||sym){ positions.push({symbol:sym,name:r[iDesc]||sym,shares:num(r[iQty]),price:iPx!==-1?num(r[iPx]):0,value:v,gain:g,currency:cur}); balance+=v; }
         k++;
       }
       if(positions.length>0){
-        let uv=0,cv=0;
-        positions.forEach(p=>p.currency==='CAD'?cv+=p.value:uv+=p.value);
+        let uv=0,cv=0; positions.forEach(p=>p.currency==='CAD'?cv+=p.value:uv+=p.value);
         accounts.push({name:acctName,currency:cv>uv?'CAD':'USD',positions,balance,cash});
       }
       i=k;
@@ -546,6 +438,47 @@ function parseTDCanada(text){
 }
 
 const PARSERS={fidelity:parseFidelity,etrade:parseEtrade,td_canada:parseTDCanada};
+
+// ════════════════════════════════════════════════════════════
+//  PERSISTENCE — localStorage
+// ════════════════════════════════════════════════════════════
+function saveToStorage(){
+  try {
+    // Save parsed file data (not raw CSVs — just the structured accounts)
+    const toSave = {};
+    Object.entries(state.files).forEach(([k,fl])=>{
+      toSave[k] = fl.map(f=>({ name:f.name, accounts:f.accounts }));
+    });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+    localStorage.setItem(APIKEY_KEY, state.apiKey||'');
+  } catch(e){ console.warn('Storage save failed:', e); }
+}
+
+function loadFromStorage(){
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      const saved = JSON.parse(raw);
+      Object.entries(saved).forEach(([k,fl])=>{
+        if(state.files[k] !== undefined) state.files[k] = fl;
+      });
+    }
+    state.apiKey = localStorage.getItem(APIKEY_KEY)||'';
+
+    // Load cached briefing
+    const br = localStorage.getItem(BRIEFING_KEY);
+    if(br) state.briefing = JSON.parse(br);
+  } catch(e){ console.warn('Storage load failed:', e); }
+}
+
+function clearStorage(){
+  if(!confirm('Clear all saved portfolio data?')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(BRIEFING_KEY);
+  state.files = { fidelity:[], etrade:[], td_canada:[] };
+  state.briefing = null;
+  render();
+}
 
 // ════════════════════════════════════════════════════════════
 //  DATA HELPERS
@@ -572,33 +505,156 @@ function getAllPositions(){
 }
 function loaded(){ return Object.entries(state.files).filter(([,fl])=>fl.length>0); }
 
+function todayStr(){
+  return new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+}
+
+// ════════════════════════════════════════════════════════════
+//  AI BRIEFING
+// ════════════════════════════════════════════════════════════
+async function generateBriefing(){
+  const allPos = getAllPositions();
+  if(!allPos.length){ alert('Import your portfolio data first.'); return; }
+
+  state.briefingLoading = true;
+  state.briefingError = null;
+  render();
+
+  const total = getTotal();
+  const topPos = allPos.slice(0, 15);
+  const positionsList = topPos.map(p => {
+    const pct = (p.usdValue / total * 100).toFixed(1);
+    return p.symbol + ' $' + (p.usdValue/1000).toFixed(1) + 'K (' + pct + '%)';
+  }).join(', ');
+
+  const today = todayStr();
+
+  const hdrs = {
+    'Content-Type': 'application/json'
+  };
+
+  // The user message asks for JSON directly
+  const userMsg =
+    'Today is ' + today + '.\n\n' +
+    'My portfolio top holdings: ' + positionsList + '\n\n' +
+    'Search the web for the latest news on these holdings, then respond with ONLY this JSON (no markdown, no explanation):\n' +
+    '{"date":"' + today + '","summary":"2-3 sentence market overview","watchItems":[{"symbol":"TICKER","name":"Company","sentiment":"positive","headline":"headline","detail":"2-3 sentence detail"}],"sectorThemes":"themes","actionableInsights":"insights"}';
+
+  async function callAPI(useSearch) {
+    const body = {
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 3000,
+      messages: [{ role: 'user', content: userMsg }]
+    };
+    if (useSearch) {
+      body.tools = [{ type: 'web_search_20250305', name: 'web_search' }];
+    }
+    const r = await fetch('https://portfolio-sync.harleytong95.workers.dev/', {
+      method: 'POST', headers: hdrs, body: JSON.stringify(body)
+    });
+    const data = await r.json();
+    console.log('API response (search=' + useSearch + '):', JSON.stringify(data).slice(0,1000));
+    return { ok: r.ok, status: r.status, data };
+  }
+
+  try {
+    // Try with web search first, fall back without if it fails
+    let result = await callAPI(true);
+
+    if (!result.ok) {
+      console.warn('Web search call failed (' + result.status + '), retrying without search...');
+      result = await callAPI(false);
+    }
+
+    if (!result.ok) {
+      const msg = result.data && result.data.error && result.data.error.message
+        ? result.data.error.message
+        : JSON.stringify(result.data).slice(0, 300);
+      throw new Error('API ' + result.status + ': ' + msg);
+    }
+
+    const data = result.data;
+    const allText = (data.content || [])
+      .filter(b => b.type === 'text')
+      .map(b => b.text)
+      .join('');
+
+    console.log('Text blocks:', allText.slice(0, 600));
+
+    if (!allText.trim()) {
+      throw new Error('Empty response. stop_reason=' + data.stop_reason +
+        ' blocks=' + (data.content||[]).map(b=>b.type).join(','));
+    }
+
+    // Extract JSON — find outermost { }
+    const s = allText.indexOf('{');
+    const e = allText.lastIndexOf('}');
+    if (s === -1 || e <= s) throw new Error('No JSON in response: ' + allText.slice(0,300));
+
+    let briefing;
+    try { briefing = JSON.parse(allText.slice(s, e + 1)); }
+    catch(pe) { throw new Error('JSON parse error: ' + pe.message + ' | text: ' + allText.slice(s, s+200)); }
+
+    // Fill missing fields gracefully
+    briefing.summary            = briefing.summary            || 'Summary not available.';
+    briefing.watchItems         = briefing.watchItems         || [];
+    briefing.sectorThemes       = briefing.sectorThemes       || '';
+    briefing.actionableInsights = briefing.actionableInsights || '';
+    briefing.date               = briefing.date               || today;
+    briefing.generatedAt        = new Date().toISOString();
+
+    state.briefing = briefing;
+    state.briefingLoading = false;
+    localStorage.setItem(BRIEFING_KEY, JSON.stringify(briefing));
+    render();
+
+  } catch(err) {
+    console.error('Briefing failed:', err);
+    state.briefingLoading = false;
+    state.briefingError = err.message || 'Unknown error';
+    render();
+  }
+}
+
 // ════════════════════════════════════════════════════════════
 //  RENDER
 // ════════════════════════════════════════════════════════════
 function render(){
   const ld=loaded();
   document.getElementById('loaded-badge').textContent=`${ld.length} / 3`;
-  ['import','overview','holdings'].forEach(v=>document.getElementById('nav-'+v).classList.toggle('active',state.view===v));
+  ['import','overview','holdings','briefing'].forEach(v=>document.getElementById('nav-'+v).classList.toggle('active',state.view===v));
   const el=document.getElementById('main-content');
-  el.innerHTML = state.view==='import' ? renderImport() : state.view==='overview' ? renderOverview() : renderHoldings();
+  if(state.view==='import')        el.innerHTML=renderImport();
+  else if(state.view==='overview') el.innerHTML=renderOverview();
+  else if(state.view==='holdings') el.innerHTML=renderHoldings();
+  else                              el.innerHTML=renderBriefing();
 }
 
-// ── IMPORT ────────────────────────────────────────────────
+// ── IMPORT ──────────────────────────────────────────────────
 function renderImport(){
+  const ld=loaded();
+  const hasSaved = ld.length>0;
+
   let html=`<div class="page">
     <div class="page-title">Import</div>
-    <div class="page-sub">Upload CSVs from each brokerage. Everything stays on your device.</div>`;
+    <div class="page-sub">Upload CSVs from each brokerage. Your data is saved automatically between sessions.</div>`;
+
+  // Storage status banner
+  if(hasSaved){
+    html+=`<div class="storage-banner" style="margin:0 16px 0">
+      <div class="storage-banner-icon">💾</div>
+      <div class="storage-banner-text"><strong>Data saved locally.</strong> Your portfolio loads automatically each visit.</div>
+      <button class="storage-banner-btn" onclick="clearStorage()">Clear</button>
+    </div>`;
+  }
 
   Object.entries(META).forEach(([key,meta])=>{
     const fl=state.files[key];
     const has=fl.length>0;
-    const totalAccts=fl.reduce((s,f)=>s+f.accounts.length,0);
     const totalPos=fl.reduce((s,f)=>f.accounts.reduce((ss,a)=>ss+a.positions.length,0)+s,0);
 
     html+=`<div class="section-label">${meta.flag} ${meta.label}</div>
     <div class="card">
-
-      <!-- Platform header -->
       <div class="platform-header">
         <div class="platform-icon" style="background:${meta.bg}">${meta.flag}</div>
         <div>
@@ -607,8 +663,6 @@ function renderImport(){
         </div>
         ${has?`<div class="platform-badge"><span class="badge badge-green">✓ ${totalPos} positions</span></div>`:''}
       </div>
-
-      <!-- Drop zone -->
       <div class="drop-zone-wrap">
         <label class="drop-zone" id="dz-${key}">
           <input type="file" accept=".csv,.txt" multiple data-key="${key}" onchange="handleFiles(this)"/>
@@ -617,14 +671,10 @@ function renderImport(){
         </label>
       </div>`;
 
-    // Uploaded files
     if(has){
       html+=`<div class="file-list">`;
       fl.forEach((f,fi)=>{
-        const names=f.accounts.map(a=>{
-          const c=a.currency!=='USD'?` (${a.currency})`:'';
-          return a.name+c;
-        }).join(', ');
+        const names=f.accounts.map(a=>(a.currency!=='USD'?a.name+` (${a.currency})`:a.name)).join(', ');
         html+=`<div class="file-row">
           <div class="file-icon">📄</div>
           <div style="flex:1;min-width:0">
@@ -636,7 +686,6 @@ function renderImport(){
       });
       html+=`</div>`;
 
-      // Account breakdown
       const allAccts=fl.flatMap(f=>f.accounts);
       if(allAccts.length){
         html+=`<div class="acct-rows">`;
@@ -657,26 +706,22 @@ function renderImport(){
       }
     }
 
-    // How to export
     html+=`<div class="guide">
       <div class="guide-title">How to export</div>
       <ol>${GUIDES[key].map(s=>`<li>${s}</li>`).join('')}</ol>
-    </div>
-
-    </div>`;/* end .card */
+    </div></div>`;
 
     html+=`<div id="status-${key}" class="import-status"></div>`;
   });
 
-  if(loaded().length>0){
+  if(ld.length>0){
     html+=`<div class="cta"><button class="cta-btn" onclick="setView('overview')">View Dashboard →</button></div>`;
   }
 
-  html+=`</div>`;
-  return html;
+  html+=`</div>`; return html;
 }
 
-// ── OVERVIEW ──────────────────────────────────────────────
+// ── OVERVIEW ─────────────────────────────────────────────────
 function renderOverview(){
   const ld=loaded();
   if(!ld.length) return emptyState('📥','No data imported','Upload CSVs from your brokerages to see your consolidated portfolio.','import','Go to Import');
@@ -690,133 +735,58 @@ function renderOverview(){
     return {label:META[k].label,color:META[k].color,bg:META[k].bg,pct:total?(val/total)*100:0};
   });
 
-  // SVG donut
   const R=40,circ=2*Math.PI*R; let off=0,paths='';
   const tot2=segs.reduce((s,x)=>s+x.pct,0)||1;
-  segs.forEach(s=>{
-    const d=(s.pct/tot2)*circ;
-    paths+=`<circle cx="50" cy="50" r="${R}" fill="none" stroke="${s.color}" stroke-width="12" stroke-linecap="round"
-      stroke-dasharray="${Math.max(d-3,0)} ${circ-Math.max(d-3,0)}"
-      stroke-dashoffset="${-off-1.5}" transform="rotate(-90 50 50)"/>`;
-    off+=d;
-  });
+  segs.forEach(s=>{ const d=(s.pct/tot2)*circ; paths+=`<circle cx="50" cy="50" r="${R}" fill="none" stroke="${s.color}" stroke-width="12" stroke-linecap="round" stroke-dasharray="${Math.max(d-3,0)} ${circ-Math.max(d-3,0)}" stroke-dashoffset="${-off-1.5}" transform="rotate(-90 50 50)"/>`; off+=d; });
 
-  let html=`<div class="page">`;
-
-  // Hero card
-  html+=`<div class="hero-card">
+  let html=`<div class="page">
+  <div class="hero-card">
     <div class="hero-label">Total Portfolio (USD)</div>
     <div class="hero-value">${fmtC(total)}</div>
     <div class="hero-row">
-      <span class="badge ${totalGain>=0?'badge-green':'badge-red'}" style="background:rgba(255,255,255,.2);color:#fff">
-        ${totalGain>=0?'▲':'▼'} ${fmtC(Math.abs(totalGain))} &nbsp;${totalGain>=0?'+':''}${fmt(gainPct,2)}%
-      </span>
+      <span class="badge ${totalGain>=0?'badge-green':'badge-red'}" style="background:rgba(255,255,255,.2);color:#fff">${totalGain>=0?'▲':'▼'} ${fmtC(Math.abs(totalGain))} &nbsp;${totalGain>=0?'+':''}${fmt(gainPct,2)}%</span>
       <span class="hero-sub">all-time gain</span>
     </div>
-  </div>`;
-
-  // Stats
-  html+=`<div class="stats-strip">
-    <div class="stat-tile">
-      <div class="stat-label">Accounts</div>
-      <div class="stat-value" style="color:var(--teams-purple)">${allAccts.length}</div>
-      <div class="stat-sub">${ld.length} platform${ld.length!==1?'s':''}</div>
-    </div>
-    <div class="stat-tile">
-      <div class="stat-label">Positions</div>
-      <div class="stat-value" style="color:var(--blue)">${allPos.length}</div>
-      <div class="stat-sub">unique holdings</div>
-    </div>
-    <div class="stat-tile">
-      <div class="stat-label">Largest</div>
-      <div class="stat-value" style="color:var(--orange);font-size:17px">${allPos[0]?.symbol||'—'}</div>
-      <div class="stat-sub">${allPos[0]?fmtC(allPos[0].usdValue):'—'}</div>
-    </div>
-  </div>`;
-
-  // Allocation
-  html+=`<div class="donut-card">
+  </div>
+  <div class="stats-strip">
+    <div class="stat-tile"><div class="stat-label">Accounts</div><div class="stat-value" style="color:var(--teams-purple)">${allAccts.length}</div><div class="stat-sub">${ld.length} platform${ld.length!==1?'s':''}</div></div>
+    <div class="stat-tile"><div class="stat-label">Positions</div><div class="stat-value" style="color:var(--blue)">${allPos.length}</div><div class="stat-sub">unique holdings</div></div>
+    <div class="stat-tile"><div class="stat-label">Largest</div><div class="stat-value" style="color:var(--orange);font-size:17px">${allPos[0]?.symbol||'—'}</div><div class="stat-sub">${allPos[0]?fmtC(allPos[0].usdValue):'—'}</div></div>
+  </div>
+  <div class="donut-card">
     <div class="donut-card-title">Allocation by Platform</div>
     <div class="donut-layout">
-      <svg viewBox="0 0 100 100" width="110" height="110" style="flex-shrink:0">
-        <circle cx="50" cy="50" r="40" fill="none" stroke="var(--border)" stroke-width="12"/>
-        ${paths}
-      </svg>
-      <div class="donut-legend">
-        ${segs.map(s=>`<div class="donut-leg">
-          <div class="donut-leg-row">
-            <div class="donut-leg-dot" style="background:${s.color}"></div>
-            <div class="donut-leg-name">${s.label}</div>
-            <div class="donut-leg-pct">${fmt(s.pct,1)}%</div>
-          </div>
-          <div class="donut-bar" style="margin-left:18px">
-            <div class="donut-bar-fill" style="background:${s.color};width:${s.pct}%"></div>
-          </div>
-        </div>`).join('')}
-      </div>
+      <svg viewBox="0 0 100 100" width="110" height="110" style="flex-shrink:0"><circle cx="50" cy="50" r="40" fill="none" stroke="var(--border)" stroke-width="12"/>${paths}</svg>
+      <div class="donut-legend">${segs.map(s=>`<div class="donut-leg"><div class="donut-leg-row"><div class="donut-leg-dot" style="background:${s.color}"></div><div class="donut-leg-name">${s.label}</div><div class="donut-leg-pct">${fmt(s.pct,1)}%</div></div><div class="donut-bar" style="margin-left:18px"><div class="donut-bar-fill" style="background:${s.color};width:${s.pct}%"></div></div></div>`).join('')}</div>
     </div>
-  </div>`;
+  </div>
+  <div class="section-label">Accounts</div><div class="card">`;
 
-  // Platforms
-  html+=`<div class="section-label">Accounts</div><div class="card">`;
-  ld.forEach(([key],li)=>{
+  ld.forEach(([key])=>{
     const meta=META[key],accts=state.files[key].flatMap(f=>f.accounts);
-    const totalUSD=accts.reduce((s,a)=>s+acctUSD(a),0);
-    const isExp=state.expand===key;
+    const totalUSD=accts.reduce((s,a)=>s+acctUSD(a),0),isExp=state.expand===key;
     html+=`<div class="platform-row" onclick="toggleExpand('${key}')">
       <div class="pl-icon" style="background:${meta.bg}">${meta.flag}</div>
-      <div class="pl-body">
-        <div class="pl-name">${meta.label}</div>
-        <div class="pl-detail">${accts.length} account${accts.length!==1?'s':''} · ${accts.reduce((s,a)=>s+a.positions.length,0)} positions</div>
-      </div>
-      <div class="pl-right">
-        <div class="pl-value">${fmtD(totalUSD)}</div>
-      </div>
+      <div class="pl-body"><div class="pl-name">${meta.label}</div><div class="pl-detail">${accts.length} account${accts.length!==1?'s':''} · ${accts.reduce((s,a)=>s+a.positions.length,0)} positions</div></div>
+      <div class="pl-right"><div class="pl-value">${fmtD(totalUSD)}</div></div>
       <span class="chevron ${isExp?'open':''}">▼</span>
     </div>
-    ${isExp?accts.map(acc=>{
-      const usd=acctUSD(acc),isCAD=acc.currency==='CAD';
-      return `<div class="sub-acct-row">
-        <div>
-          <div class="sub-acct-name">${acc.name}${isCAD?`<span class="cur-tag" style="background:${META.td_canada.bg};color:${META.td_canada.color}">CAD</span>`:''}</div>
-          <div style="font-size:12px;color:var(--text3);margin-top:1px">${acc.positions.length} positions</div>
-        </div>
-        <div class="sub-acct-right">
-          <div class="sub-acct-val">${fmtD(usd)}</div>
-          ${isCAD?`<div class="sub-acct-sub">CA$${fmt(acc.balance)}</div>`:''}
-        </div>
-      </div>`;
-    }).join(''):''}`;
+    ${isExp?accts.map(acc=>{const usd=acctUSD(acc),isCAD=acc.currency==='CAD';return `<div class="sub-acct-row"><div><div class="sub-acct-name">${acc.name}${isCAD?`<span class="cur-tag" style="background:${META.td_canada.bg};color:${META.td_canada.color}">CAD</span>`:''}</div><div style="font-size:12px;color:var(--text3);margin-top:1px">${acc.positions.length} positions</div></div><div style="text-align:right"><div class="sub-acct-val">${fmtD(usd)}</div>${isCAD?`<div class="sub-acct-sub">CA$${fmt(acc.balance)}</div>`:''}</div></div>`;}).join(''):''}`;
   });
-  html+=`</div>`;
 
-  // Top holdings
-  html+=`<div class="section-label">Top Holdings</div><div class="card">`;
+  html+=`</div><div class="section-label">Top Holdings</div><div class="card">`;
   allPos.slice(0,8).forEach((pos,i)=>{
     const cost=pos.usdValue-pos.usdGain,pct=cost?(pos.usdGain/cost)*100:0;
     const dots=pos.platforms.map(pl=>{const m=Object.values(META).find(x=>x.label===pl);return m?`<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${m.color};margin-right:3px"></span>`:''}).join('');
-    html+=`<div class="holding-row">
-      <div class="h-num">${i+1}</div>
-      <div style="width:62px;flex-shrink:0">
-        <div class="h-sym">${pos.symbol}</div>
-        <div style="margin-top:3px">${dots}</div>
-      </div>
-      <div class="h-name">${pos.name}</div>
-      <div class="h-right">
-        <div class="h-val">${fmtD(pos.usdValue)}</div>
-        <div class="h-pct ${pct>=0?'pos':'neg'}">${pct>=0?'+':''}${fmt(pct,1)}%</div>
-      </div>
-    </div>`;
+    html+=`<div class="holding-row"><div class="h-num">${i+1}</div><div style="width:62px;flex-shrink:0"><div class="h-sym">${pos.symbol}</div><div style="margin-top:3px">${dots}</div></div><div class="h-name">${pos.name}</div><div class="h-right"><div class="h-val">${fmtD(pos.usdValue)}</div><div class="h-pct ${pct>=0?'pos':'neg'}">${pct>=0?'+':''}${fmt(pct,1)}%</div></div></div>`;
   });
-  html+=`</div></div>`;
-  return html;
+  html+=`</div></div>`; return html;
 }
 
-// ── HOLDINGS ──────────────────────────────────────────────
+// ── HOLDINGS ─────────────────────────────────────────────────
 function renderHoldings(){
   const ld=loaded();
   if(!ld.length) return emptyState('📋','No data imported','Import your CSVs to see all holdings.','import','Go to Import');
-
   const total=getTotal();
   let allPos=getAllPositions();
   if(state.sortBy==='gain')   allPos.sort((a,b)=>b.usdGain-a.usdGain);
@@ -828,32 +798,119 @@ function renderHoldings(){
       <div style="font-size:15px;font-weight:700;color:var(--teams-purple);font-variant-numeric:tabular-nums">${fmtC(total)}</div>
     </div>
     <div class="seg-row">
-      ${['value','gain','symbol'].map(s=>`
-        <button class="seg-btn${state.sortBy===s?' active':''}" onclick="setSort('${s}')">
-          ${s==='value'?'By Value':s==='gain'?'By Gain':'A – Z'}
-        </button>`).join('')}
+      ${['value','gain','symbol'].map(s=>`<button class="seg-btn${state.sortBy===s?' active':''}" onclick="setSort('${s}')">${s==='value'?'By Value':s==='gain'?'By Gain':'A – Z'}</button>`).join('')}
     </div>
-    <div style="margin:12px 0 0">
-      <div class="card" style="margin:0 16px">
-        ${allPos.map((pos,i)=>{
-          const cost=pos.usdValue-pos.usdGain,pct=cost?(pos.usdGain/cost)*100:0;
-          const dots=pos.platforms.map(pl=>{const m=Object.values(META).find(x=>x.label===pl);return m?`<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${m.color};margin-right:3px"></span>`:''}).join('');
-          return `<div class="holding-row">
-            <div class="h-num">${i+1}</div>
-            <div style="width:62px;flex-shrink:0">
-              <div class="h-sym">${pos.symbol.length<=5?pos.symbol:pos.symbol.slice(0,5)}</div>
-              <div style="margin-top:3px">${dots}</div>
-            </div>
-            <div class="h-name">${pos.name}</div>
-            <div class="h-right">
-              <div class="h-val">${fmtD(pos.usdValue)}</div>
-              <div class="h-pct ${pct>=0?'pos':'neg'}">${pct>=0?'+':''}${fmt(pct,1)}%</div>
-            </div>
-          </div>`;
-        }).join('')}
-      </div>
-    </div>
+    <div style="margin:12px 0 0"><div class="card" style="margin:0 16px">
+      ${allPos.map((pos,i)=>{
+        const cost=pos.usdValue-pos.usdGain,pct=cost?(pos.usdGain/cost)*100:0;
+        const dots=pos.platforms.map(pl=>{const m=Object.values(META).find(x=>x.label===pl);return m?`<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${m.color};margin-right:3px"></span>`:''}).join('');
+        return `<div class="holding-row"><div class="h-num">${i+1}</div><div style="width:62px;flex-shrink:0"><div class="h-sym">${pos.symbol.length<=5?pos.symbol:pos.symbol.slice(0,5)}</div><div style="margin-top:3px">${dots}</div></div><div class="h-name">${pos.name}</div><div class="h-right"><div class="h-val">${fmtD(pos.usdValue)}</div><div class="h-pct ${pct>=0?'pos':'neg'}">${pct>=0?'+':''}${fmt(pct,1)}%</div></div></div>`;
+      }).join('')}
+    </div></div>
   </div>`;
+}
+
+// ── AI BRIEFING ───────────────────────────────────────────────
+function renderBriefing(){
+  const ld=loaded();
+  const today=todayStr();
+  const b=state.briefing;
+  const isToday = b && new Date(b.generatedAt).toDateString()===new Date().toDateString();
+
+  let html=`<div class="page">
+  <div class="briefing-hero">
+    <div class="briefing-date">${today}</div>
+    <div class="briefing-title">AI Daily Briefing</div>
+    <div class="briefing-sub">Personalized news & insights for your portfolio</div>
+  </div>`;
+
+
+
+  if(!ld.length){
+    html+=`<div style="margin:12px 16px 0;background:var(--orange-bg);border-radius:var(--radius);padding:14px 16px;font-size:14px;color:var(--text)">
+      ⚠️ Import your portfolio data first so the AI knows which positions to research.
+    </div>`;
+  } else {
+    // Refresh button
+    const btnLabel = state.briefingLoading ? '⏳ Searching the web & generating...' : isToday ? '🔄 Refresh Today\'s Briefing' : '✦ Generate Today\'s Briefing';
+    html+=`<div style="padding:0 16px">
+      <button class="refresh-btn" onclick="generateBriefing()" ${state.briefingLoading?'disabled':''}>
+        ${btnLabel}
+      </button>
+    </div>`;
+  }
+
+  // Loading state
+  if(state.briefingLoading){
+    html+=`<div class="loading-card">
+      <div class="loading-spinner">⟳</div>
+      <div class="loading-text">Researching your portfolio…</div>
+      <div class="loading-sub">Searching for today's news on your holdings</div>
+      <div class="loading-steps">
+        <div class="loading-step done">✓ Portfolio positions extracted</div>
+        <div class="loading-step active">⟳ Searching web for news on your holdings…</div>
+        <div class="loading-step">◦ Generating personalized insights</div>
+      </div>
+    </div>`;
+  }
+
+  // Error
+  if(state.briefingError){
+    html+=`<div style="margin:12px 16px 0;background:var(--red-bg);border-radius:var(--radius);padding:14px 16px">
+      <div style="font-size:14px;font-weight:600;color:var(--red);margin-bottom:4px">Generation failed</div>
+      <div style="font-size:13px;color:var(--text)">${state.briefingError}</div>
+    </div>`;
+  }
+
+  // Briefing content
+  if(b && !state.briefingLoading){
+    const freshness = isToday ? 'Generated today' : `Generated ${new Date(b.generatedAt).toLocaleDateString('en-US',{month:'short',day:'numeric'})}`;
+
+    // Summary
+    html+=`<div class="section-label">Market Summary</div>
+    <div class="briefing-content">
+      <div class="briefing-section">
+        <div class="briefing-section-title">Today's Overview</div>
+        <div class="briefing-section-body">${b.summary||''}</div>
+      </div>
+      ${b.sectorThemes?`<div class="briefing-section">
+        <div class="briefing-section-title">Sector Themes</div>
+        <div class="briefing-section-body">${b.sectorThemes}</div>
+      </div>`:''}
+      ${b.actionableInsights?`<div class="briefing-section">
+        <div class="briefing-section-title">Watch Out For</div>
+        <div class="briefing-section-body">${b.actionableInsights}</div>
+      </div>`:''}
+    </div>`;
+
+    // News items per position
+    if(b.watchItems?.length){
+      html+=`<div class="section-label">Your Holdings in the News</div>
+      <div class="briefing-content">`;
+      b.watchItems.forEach(item=>{
+        const sentColor = item.sentiment==='positive'?'var(--green)':item.sentiment==='negative'?'var(--red)':'var(--text3)';
+        const sentBg    = item.sentiment==='positive'?'var(--green-bg)':item.sentiment==='negative'?'var(--red-bg)':'var(--border)';
+        const sentIcon  = item.sentiment==='positive'?'↑':item.sentiment==='negative'?'↓':'→';
+        html+=`<div class="news-item">
+          <div class="news-ticker">${item.symbol} · ${item.name||''}</div>
+          <div class="news-headline">${item.headline||''}</div>
+          <div class="news-body">${item.detail||''}</div>
+          <span class="news-sentiment" style="background:${sentBg};color:${sentColor}">${sentIcon} ${item.sentiment}</span>
+        </div>`;
+      });
+      html+=`</div>`;
+    }
+
+    html+=`<div class="briefing-footer">⚡ ${freshness} · Powered by Claude with live web search<br>Not financial advice. Always do your own research.</div>`;
+  } else if(!b && !state.briefingLoading && !state.briefingError && ld.length){
+    html+=`<div style="margin:12px 16px 0;text-align:center;padding:28px 16px;background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow-sm)">
+      <div style="font-size:36px;margin-bottom:10px">✦</div>
+      <div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:6px">No briefing yet</div>
+      <div style="font-size:13px;color:var(--text2)">Tap "Generate" above to get today's AI-powered news summary for your holdings.</div>
+    </div>`;
+  }
+
+  html+=`</div>`; return html;
 }
 
 function emptyState(icon,title,body,v,btn){
@@ -866,7 +923,21 @@ function emptyState(icon,title,body,v,btn){
 function setView(v){ state.view=v; render(); document.getElementById('main-content').scrollTop=0; }
 function setSort(s){ state.sortBy=s; render(); }
 function toggleExpand(key){ state.expand=state.expand===key?null:key; render(); }
-function removeFile(key,idx){ state.files[key].splice(idx,1); render(); }
+
+function saveApiKey(){
+  const f=document.getElementById('api-key-field');
+  if(f) state.apiKey=f.value.trim();
+  saveToStorage();
+  // Brief visual feedback
+  const btn=document.querySelector('.api-key-save');
+  if(btn){ btn.textContent='✓ Saved'; setTimeout(()=>btn.textContent='Save',1500); }
+}
+
+function removeFile(key,idx){
+  state.files[key].splice(idx,1);
+  saveToStorage();
+  render();
+}
 
 function handleFiles(input){
   const key=input.dataset.key,files=Array.from(input.files);
@@ -878,6 +949,7 @@ function handleFiles(input){
       try{ state.files[key].push({name:file.name,accounts:PARSERS[key](e.target.result)}); }
       catch(err){ errors.push(`${file.name}: ${err.message}`); }
       if(++done===files.length){
+        saveToStorage();
         render();
         if(errors.length){ const el=document.getElementById('status-'+key); if(el){el.style.color='var(--red)';el.textContent='Error: '+errors.join(' | ');} }
       }
@@ -886,6 +958,12 @@ function handleFiles(input){
   });
 }
 
+// ════════════════════════════════════════════════════════════
+//  BOOT
+// ════════════════════════════════════════════════════════════
+loadFromStorage();
+// If we have saved data, go straight to overview
+if(loaded().length > 0) state.view = 'overview';
 render();
 </script>
 </body>
