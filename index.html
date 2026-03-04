@@ -297,42 +297,57 @@ body { color:var(--text); font-family:-apple-system,'Segoe UI','Helvetica Neue',
 
 <script>
 // ════════════════════════════════════════════════════════════
-//  CONSTANTS
+//  CONSTANTS & CONFIG
 // ════════════════════════════════════════════════════════════
-const CAD_TO_USD = 0.74;
-const STORAGE_KEY = 'portfoliosync_v2';
+const CAD_TO_USD   = 0.74;
+const PROXY        = 'https://portfolio-sync.harleytong95.workers.dev/';
+const STORAGE_KEY  = 'portfoliosync_v2';
 const BRIEFING_KEY = 'portfoliosync_briefing_v1';
-const APIKEY_KEY  = 'portfoliosync_apikey';
+const APIKEY_KEY   = 'portfoliosync_apikey';
 
 const META = {
   fidelity:  { label:'Fidelity',       flag:'🇺🇸', color:'#107C10', bg:'#DFF6DD' },
   etrade:    { label:'E*TRADE',        flag:'🇺🇸', color:'#6264A7', bg:'#E8EAF6' },
   td_canada: { label:'TD Direct (CA)', flag:'🇨🇦', color:'#C4314B', bg:'#FCE4E8' }
 };
-
 const GUIDES = {
-  fidelity: ['Log in → Accounts & Trade → Portfolio','Click the Positions tab','Click ⬇ Download icon (top-right of page)','Save as .CSV — repeat for each account'],
-  etrade:   ['Log in → go to Portfolios page','Click Positions tab, select account','Click Download → Collapsed View, All Positions','Save as .CSV — repeat for each account'],
-  td_canada:['Log in to TD WebBroker','Go to Accounts → Account Holdings','Select account from the dropdown','Scroll down → "Download to: Spreadsheet (.CSV)"','Upload all CSVs — USD & CAD auto-detected']
+  fidelity:  ['Log in → Accounts & Trade → Portfolio','Click the Positions tab','Click ⬇ Download icon (top-right of page)','Save as .CSV — repeat for each account'],
+  etrade:    ['Log in → go to Portfolios page','Click Positions tab, select account','Click Download → Collapsed View, All Positions','Save as .CSV — repeat for each account'],
+  td_canada: ['Log in to TD WebBroker','Go to Accounts → Account Holdings','Select account from dropdown','Scroll down → "Download to: Spreadsheet (.CSV)"','Upload all CSVs — USD & CAD auto-detected']
 };
 
+// Symbols that have real-time exchange prices (skip CUSIPs, money markets, bonds)
+function isPriceable(sym) {
+  if (!sym) return false;
+  if (sym.length === 9 && /^[A-Z0-9]{9}$/.test(sym)) return false;   // CUSIP
+  if (/treasury|bond|\d{1,2}\.\d{3}%/i.test(sym)) return false;       // bonds
+  if (['SPAXX','VMFXX','TDB2915','CMR','CASH'].includes(sym)) return false; // money markets
+  if (sym.includes(' ') && sym.length > 8) return false;               // long descriptions
+  return /^[A-Z]{1,5}(\.[A-Z]{1,2})?$/.test(sym);                     // clean ticker
+}
+
 // ════════════════════════════════════════════════════════════
-//  STATE
+//  STATE  — single source of truth
 // ════════════════════════════════════════════════════════════
 const state = {
-  view: 'import',
-  sortBy: 'value',
-  expand: null,
-  files: { fidelity:[], etrade:[], td_canada:[] },
-  briefing: null,      // cached briefing object
+  view:            'import',
+  sortBy:          'value',   // 'value' | 'gain' | 'dailyChange' | 'symbol'
+  expandedHolding: null,      // symbol string of expanded holding row
+  expandPlatform:  null,      // platform key expanded in overview
+  files:           { fidelity:[], etrade:[], td_canada:[] },
+  // Live price map:  symbol → { price, prevClose, change, changePct, currency, name }
+  livePrices:      {},
+  liveLoading:     false,
+  liveLastFetched: null,
+  // AI briefing
+  briefing:        null,
   briefingLoading: false,
-  briefingError: null,
-  apiKey: '',
-  showApiKey: false
+  briefingError:   null,
+  apiKey:          '',
 };
 
 // ════════════════════════════════════════════════════════════
-//  CSV HELPERS
+//  CSV HELPERS  (unchanged)
 // ════════════════════════════════════════════════════════════
 function parseRows(text){
   text=text.replace(/^\uFEFF/,'').replace(/\r\n/g,'\n').replace(/\r/g,'\n');
@@ -347,7 +362,7 @@ function findCol(h,ks){ for(const k of [].concat(ks)){const i=h.findIndex(x=>x.i
 function norm(r){ return r.map(h=>h.toLowerCase().replace(/[^a-z0-9]/g,'_')); }
 
 // ════════════════════════════════════════════════════════════
-//  PARSERS
+//  PARSERS  (unchanged)
 // ════════════════════════════════════════════════════════════
 function parseFidelity(text){
   const rows=parseRows(text);
@@ -374,7 +389,6 @@ function parseFidelity(text){
   if(!res.length||res.every(a=>!a.positions.length)) throw new Error('No positions found');
   return res;
 }
-
 function parseEtrade(text){
   const rows=parseRows(text);
   const hi=rows.findIndex(r=>{const n=norm(r);return findCol(n,['symbol'])!==-1&&findCol(n,['value'])!==-1&&findCol(n,['quantity','qty'])!==-1;});
@@ -395,7 +409,6 @@ function parseEtrade(text){
   if(!positions.length) throw new Error('No positions found');
   return [{name:'Brokerage Account',currency:'USD',positions,balance}];
 }
-
 function parseTDCanada(text){
   const rows=parseRows(text),accounts=[]; let i=0;
   while(i<rows.length){
@@ -436,104 +449,194 @@ function parseTDCanada(text){
   if(!accounts.length) throw new Error('No TD accounts found');
   return accounts;
 }
-
-const PARSERS={fidelity:parseFidelity,etrade:parseEtrade,td_canada:parseTDCanada};
+const PARSERS = { fidelity:parseFidelity, etrade:parseEtrade, td_canada:parseTDCanada };
 
 // ════════════════════════════════════════════════════════════
-//  PERSISTENCE — localStorage
+//  PERSISTENCE
 // ════════════════════════════════════════════════════════════
 function saveToStorage(){
   try {
-    // Save parsed file data (not raw CSVs — just the structured accounts)
     const toSave = {};
-    Object.entries(state.files).forEach(([k,fl])=>{
-      toSave[k] = fl.map(f=>({ name:f.name, accounts:f.accounts }));
-    });
+    Object.entries(state.files).forEach(([k,fl])=>{ toSave[k]=fl.map(f=>({name:f.name,accounts:f.accounts})); });
     localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
     localStorage.setItem(APIKEY_KEY, state.apiKey||'');
   } catch(e){ console.warn('Storage save failed:', e); }
 }
-
 function loadFromStorage(){
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if(raw){
-      const saved = JSON.parse(raw);
-      Object.entries(saved).forEach(([k,fl])=>{
-        if(state.files[k] !== undefined) state.files[k] = fl;
-      });
-    }
+    if(raw){ const saved=JSON.parse(raw); Object.entries(saved).forEach(([k,fl])=>{ if(state.files[k]!==undefined) state.files[k]=fl; }); }
     state.apiKey = localStorage.getItem(APIKEY_KEY)||'';
-
-    // Load cached briefing
     const br = localStorage.getItem(BRIEFING_KEY);
     if(br) state.briefing = JSON.parse(br);
   } catch(e){ console.warn('Storage load failed:', e); }
 }
-
 function clearStorage(){
   if(!confirm('Clear all saved portfolio data?')) return;
-  localStorage.removeItem(STORAGE_KEY);
-  localStorage.removeItem(BRIEFING_KEY);
-  state.files = { fidelity:[], etrade:[], td_canada:[] };
-  state.briefing = null;
-  render();
+  localStorage.removeItem(STORAGE_KEY); localStorage.removeItem(BRIEFING_KEY);
+  state.files={fidelity:[],etrade:[],td_canada:[]}; state.briefing=null; render();
 }
 
 // ════════════════════════════════════════════════════════════
-//  DATA HELPERS
+//  FORMAT HELPERS
 // ════════════════════════════════════════════════════════════
-function fmt(n,d=2){ if(isNaN(n)||n==null)return '—'; return n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}); }
-function fmtD(n){ return '$'+fmt(n); }
-function fmtC(n){ if(n>=1e9)return '$'+fmt(n/1e9,2)+'B'; if(n>=1e6)return '$'+fmt(n/1e6,2)+'M'; if(n>=1e3)return '$'+fmt(n/1e3,1)+'K'; return fmtD(n); }
-function toUSD(v,pc,ac){ const c=pc||ac||'USD'; return c==='CAD'?v*CAD_TO_USD:v; }
-function acctUSD(a){ return a.positions.reduce((s,p)=>s+toUSD(p.value,p.currency,a.currency),0); }
-function getAllAccounts(){ const out=[]; Object.entries(state.files).forEach(([pk,fl])=>fl.forEach(f=>f.accounts.forEach(a=>out.push({...a,pkey:pk})))); return out; }
-function getTotal(){ return getAllAccounts().reduce((s,a)=>s+acctUSD(a),0); }
-function getAllPositions(){
-  const map={};
-  getAllAccounts().forEach(acct=>{
-    const lbl=META[acct.pkey].label;
-    acct.positions.forEach(pos=>{
-      const uv=toUSD(pos.value,pos.currency,acct.currency),ug=toUSD(pos.gain,pos.currency,acct.currency);
-      if(!map[pos.symbol]) map[pos.symbol]={symbol:pos.symbol,name:pos.name,usdValue:0,usdGain:0,platforms:[]};
-      map[pos.symbol].usdValue+=uv; map[pos.symbol].usdGain+=ug;
-      if(!map[pos.symbol].platforms.includes(lbl)) map[pos.symbol].platforms.push(lbl);
+function fmt(n,d=2)  { if(isNaN(n)||n==null) return '—'; return n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}); }
+function fmtD(n)     { return '$'+fmt(n); }
+function fmtC(n)     { if(Math.abs(n)>=1e9) return '$'+fmt(n/1e9,2)+'B'; if(Math.abs(n)>=1e6) return '$'+fmt(n/1e6,2)+'M'; if(Math.abs(n)>=1e3) return '$'+fmt(n/1e3,1)+'K'; return fmtD(n); }
+function fmtPct(n)   { return (n>=0?'+':'')+fmt(n,2)+'%'; }
+function pctClass(n) { return n>0?'pos':n<0?'neg':''; }
+function todayStr()  { return new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'}); }
+
+// ════════════════════════════════════════════════════════════
+//  DATA LAYER  — all computed values in one place
+// ════════════════════════════════════════════════════════════
+function toUSD(v, posCurrency, acctCurrency) {
+  const c = posCurrency || acctCurrency || 'USD';
+  return c === 'CAD' ? v * CAD_TO_USD : v;
+}
+function getAllAccounts() {
+  const out = [];
+  Object.entries(state.files).forEach(([pk,fl]) => fl.forEach(f => f.accounts.forEach(a => out.push({...a, pkey:pk}))));
+  return out;
+}
+function loaded() { return Object.entries(state.files).filter(([,fl]) => fl.length > 0); }
+
+/**
+ * buildPosition(symbol) → rich position object with ALL computed fields:
+ *   symbol, name, platforms[]
+ *   shares          — total shares across all accounts
+ *   csvPrice        — price at CSV export time
+ *   csvValue        — value at CSV export time (USD)
+ *   csvGain         — all-time gain at CSV export time (USD)
+ *   livePrice       — current market price (native currency)
+ *   liveValue       — current value (USD)
+ *   dailyChange     — $ change today (USD, live only)
+ *   dailyChangePct  — % change today (live only)
+ *   totalGain       — all-time P&L in USD (live if available)
+ *   totalGainPct    — all-time P&L %
+ *   costBasis       — estimated cost basis (USD)
+ *   isLive          — whether live price is available
+ *   currency        — native currency of position
+ */
+function buildPosition(sym) {
+  const accts  = getAllAccounts();
+  let shares=0, csvValue=0, csvGain=0, csvPrice=0, name=sym, currency='USD';
+  const platforms = [];
+
+  accts.forEach(acct => {
+    acct.positions.filter(p => p.symbol === sym).forEach(p => {
+      shares    += p.shares;
+      csvValue  += toUSD(p.value, p.currency || acct.currency, acct.currency);
+      csvGain   += toUSD(p.gain,  p.currency || acct.currency, acct.currency);
+      if (p.price) csvPrice = p.price;
+      if (p.name && p.name.length > name.length) name = p.name;
+      currency = p.currency || acct.currency;
+      const lbl = META[acct.pkey].label;
+      if (!platforms.includes(lbl)) platforms.push(lbl);
     });
   });
-  return Object.values(map).sort((a,b)=>b.usdValue-a.usdValue);
-}
-function loaded(){ return Object.entries(state.files).filter(([,fl])=>fl.length>0); }
 
-function todayStr(){
-  return new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  const lp      = state.livePrices[sym];
+  const isLive  = !!(lp && isPriceable(sym) && shares > 0);
+  const liveNative = isLive ? lp.price * shares : null;
+  const liveValue  = isLive ? toUSD(liveNative, lp.currency, currency) : null;
+
+  const currentValue = liveValue !== null ? liveValue : csvValue;
+  const costBasis    = csvValue - csvGain;   // best estimate from CSV
+  const totalGain    = currentValue - costBasis;
+  const totalGainPct = costBasis !== 0 ? (totalGain / Math.abs(costBasis)) * 100 : 0;
+
+  const dailyChange    = isLive ? toUSD(lp.change * shares, lp.currency, currency) : null;
+  const dailyChangePct = isLive ? lp.changePct : null;
+
+  return {
+    symbol: sym, name, platforms, shares, currency,
+    csvPrice, csvValue, csvGain,
+    livePrice:      isLive ? lp.price      : null,
+    liveName:       isLive ? lp.name       : null,
+    liveValue, isLive,
+    currentValue,
+    costBasis, totalGain, totalGainPct,
+    dailyChange, dailyChangePct,
+  };
+}
+
+function getAllPositions() {
+  const symbols = [...new Set(getAllAccounts().flatMap(a => a.positions.map(p => p.symbol)))];
+  return symbols.map(buildPosition);
+}
+
+function getSortedPositions() {
+  const pos = getAllPositions();
+  if (state.sortBy === 'gain')        return pos.sort((a,b) => b.totalGain - a.totalGain);
+  if (state.sortBy === 'dailyChange') return pos.sort((a,b) => (b.dailyChangePct||0) - (a.dailyChangePct||0));
+  if (state.sortBy === 'symbol')      return pos.sort((a,b) => a.symbol.localeCompare(b.symbol));
+  return pos.sort((a,b) => b.currentValue - a.currentValue); // default: value
+}
+
+function getTotal() {
+  return getAllPositions().reduce((s,p) => s + p.currentValue, 0);
+}
+
+// ════════════════════════════════════════════════════════════
+//  LIVE PRICES
+// ════════════════════════════════════════════════════════════
+async function fetchLivePrices() {
+  const symbols = [...new Set(getAllAccounts().flatMap(a => a.positions.map(p => p.symbol)).filter(isPriceable))];
+  if (!symbols.length) return;
+
+  state.liveLoading = true;
+  render();
+
+  try {
+    const yahooUrl = 'https://query1.finance.yahoo.com/v7/finance/quote?symbols='
+      + symbols.join(',')
+      + '&fields=regularMarketPrice,regularMarketChange,regularMarketChangePercent,regularMarketPreviousClose,currency,shortName';
+
+    const resp = await fetch(PROXY + '?url=' + encodeURIComponent(yahooUrl));
+    const data = await resp.json();
+    const quotes = (data && data.quoteResponse && data.quoteResponse.result) || [];
+
+    quotes.forEach(q => {
+      state.livePrices[q.symbol] = {
+        price:      q.regularMarketPrice              || 0,
+        prevClose:  q.regularMarketPreviousClose      || 0,
+        change:     q.regularMarketChange             || 0,
+        changePct:  q.regularMarketChangePercent      || 0,
+        currency:   q.currency                        || 'USD',
+        name:       q.shortName                       || q.symbol,
+      };
+    });
+
+    state.liveLastFetched = new Date();
+    state.liveLoading = false;
+    render();
+  } catch(e) {
+    console.warn('Live price fetch failed:', e.message);
+    state.liveLoading = false;
+    render();
+  }
 }
 
 // ════════════════════════════════════════════════════════════
 //  AI BRIEFING
 // ════════════════════════════════════════════════════════════
-async function generateBriefing(){
+async function generateBriefing() {
   const allPos = getAllPositions();
-  if(!allPos.length){ alert('Import your portfolio data first.'); return; }
+  if (!allPos.length) { alert('Import your portfolio data first.'); return; }
 
   state.briefingLoading = true;
-  state.briefingError = null;
+  state.briefingError   = null;
   render();
 
   const total = getTotal();
-  const topPos = allPos.slice(0, 15);
-  const positionsList = topPos.map(p => {
-    const pct = (p.usdValue / total * 100).toFixed(1);
-    return p.symbol + ' $' + (p.usdValue/1000).toFixed(1) + 'K (' + pct + '%)';
+  const positionsList = allPos.slice(0,15).map(p => {
+    const pct = (p.currentValue / total * 100).toFixed(1);
+    return p.symbol + ' $' + (p.currentValue/1000).toFixed(1) + 'K (' + pct + '%)';
   }).join(', ');
 
-  const today = todayStr();
-
-  const hdrs = {
-    'Content-Type': 'application/json'
-  };
-
-  // The user message asks for JSON directly
+  const today   = todayStr();
+  const hdrs    = { 'Content-Type': 'application/json' };
   const userMsg =
     'Today is ' + today + '.\n\n' +
     'My portfolio top holdings: ' + positionsList + '\n\n' +
@@ -541,77 +644,39 @@ async function generateBriefing(){
     '{"date":"' + today + '","summary":"2-3 sentence market overview","watchItems":[{"symbol":"TICKER","name":"Company","sentiment":"positive","headline":"headline","detail":"2-3 sentence detail"}],"sectorThemes":"themes","actionableInsights":"insights"}';
 
   async function callAPI(useSearch) {
-    const body = {
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 3000,
-      messages: [{ role: 'user', content: userMsg }]
-    };
-    if (useSearch) {
-      body.tools = [{ type: 'web_search_20250305', name: 'web_search' }];
-    }
-    const r = await fetch('https://portfolio-sync.harleytong95.workers.dev/', {
-      method: 'POST', headers: hdrs, body: JSON.stringify(body)
-    });
+    const body = { model:'claude-sonnet-4-20250514', max_tokens:3000, messages:[{role:'user',content:userMsg}] };
+    if (useSearch) body.tools = [{ type:'web_search_20250305', name:'web_search' }];
+    const r = await fetch(PROXY, { method:'POST', headers:hdrs, body:JSON.stringify(body) });
     const data = await r.json();
-    console.log('API response (search=' + useSearch + '):', JSON.stringify(data).slice(0,1000));
-    return { ok: r.ok, status: r.status, data };
+    return { ok:r.ok, status:r.status, data };
   }
 
   try {
-    // Try with web search first, fall back without if it fails
     let result = await callAPI(true);
-
+    if (!result.ok) result = await callAPI(false);
     if (!result.ok) {
-      console.warn('Web search call failed (' + result.status + '), retrying without search...');
-      result = await callAPI(false);
-    }
-
-    if (!result.ok) {
-      const msg = result.data && result.data.error && result.data.error.message
-        ? result.data.error.message
-        : JSON.stringify(result.data).slice(0, 300);
+      const msg = result.data?.error?.message || JSON.stringify(result.data).slice(0,300);
       throw new Error('API ' + result.status + ': ' + msg);
     }
-
-    const data = result.data;
-    const allText = (data.content || [])
-      .filter(b => b.type === 'text')
-      .map(b => b.text)
-      .join('');
-
-    console.log('Text blocks:', allText.slice(0, 600));
-
-    if (!allText.trim()) {
-      throw new Error('Empty response. stop_reason=' + data.stop_reason +
-        ' blocks=' + (data.content||[]).map(b=>b.type).join(','));
-    }
-
-    // Extract JSON — find outermost { }
-    const s = allText.indexOf('{');
-    const e = allText.lastIndexOf('}');
-    if (s === -1 || e <= s) throw new Error('No JSON in response: ' + allText.slice(0,300));
-
+    const allText = (result.data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
+    if (!allText.trim()) throw new Error('Empty response. stop_reason=' + result.data.stop_reason);
+    const s=allText.indexOf('{'), e=allText.lastIndexOf('}');
+    if (s===-1||e<=s) throw new Error('No JSON in response: ' + allText.slice(0,200));
     let briefing;
-    try { briefing = JSON.parse(allText.slice(s, e + 1)); }
-    catch(pe) { throw new Error('JSON parse error: ' + pe.message + ' | text: ' + allText.slice(s, s+200)); }
-
-    // Fill missing fields gracefully
-    briefing.summary            = briefing.summary            || 'Summary not available.';
+    try { briefing=JSON.parse(allText.slice(s,e+1)); } catch(pe) { throw new Error('JSON parse: '+pe.message); }
+    briefing.summary            = briefing.summary            || 'Summary unavailable.';
     briefing.watchItems         = briefing.watchItems         || [];
     briefing.sectorThemes       = briefing.sectorThemes       || '';
     briefing.actionableInsights = briefing.actionableInsights || '';
     briefing.date               = briefing.date               || today;
     briefing.generatedAt        = new Date().toISOString();
-
     state.briefing = briefing;
     state.briefingLoading = false;
     localStorage.setItem(BRIEFING_KEY, JSON.stringify(briefing));
     render();
-
   } catch(err) {
-    console.error('Briefing failed:', err);
     state.briefingLoading = false;
-    state.briefingError = err.message || 'Unknown error';
+    state.briefingError   = err.message || 'Unknown error';
     render();
   }
 }
@@ -619,41 +684,37 @@ async function generateBriefing(){
 // ════════════════════════════════════════════════════════════
 //  RENDER
 // ════════════════════════════════════════════════════════════
-function render(){
-  const ld=loaded();
-  document.getElementById('loaded-badge').textContent=`${ld.length} / 3`;
-  ['import','overview','holdings','briefing'].forEach(v=>document.getElementById('nav-'+v).classList.toggle('active',state.view===v));
-  const el=document.getElementById('main-content');
-  if(state.view==='import')        el.innerHTML=renderImport();
-  else if(state.view==='overview') el.innerHTML=renderOverview();
-  else if(state.view==='holdings') el.innerHTML=renderHoldings();
-  else                              el.innerHTML=renderBriefing();
+function render() {
+  const ld = loaded();
+  document.getElementById('loaded-badge').textContent = ld.length + ' / 3';
+  ['import','overview','holdings','briefing'].forEach(v =>
+    document.getElementById('nav-'+v).classList.toggle('active', state.view===v));
+  const el = document.getElementById('main-content');
+  if      (state.view==='import')   el.innerHTML = renderImport();
+  else if (state.view==='overview') el.innerHTML = renderOverview();
+  else if (state.view==='holdings') el.innerHTML = renderHoldings();
+  else                              el.innerHTML = renderBriefing();
 }
 
 // ── IMPORT ──────────────────────────────────────────────────
-function renderImport(){
-  const ld=loaded();
-  const hasSaved = ld.length>0;
-
-  let html=`<div class="page">
+function renderImport() {
+  const ld = loaded();
+  let html = `<div class="page">
     <div class="page-title">Import</div>
     <div class="page-sub">Upload CSVs from each brokerage. Your data is saved automatically between sessions.</div>`;
 
-  // Storage status banner
-  if(hasSaved){
-    html+=`<div class="storage-banner" style="margin:0 16px 0">
+  if (ld.length > 0) {
+    html += `<div class="storage-banner" style="margin:0 16px">
       <div class="storage-banner-icon">💾</div>
-      <div class="storage-banner-text"><strong>Data saved locally.</strong> Your portfolio loads automatically each visit.</div>
+      <div class="storage-banner-text"><strong>Data saved locally.</strong> Loads automatically each visit.</div>
       <button class="storage-banner-btn" onclick="clearStorage()">Clear</button>
     </div>`;
   }
 
-  Object.entries(META).forEach(([key,meta])=>{
-    const fl=state.files[key];
-    const has=fl.length>0;
-    const totalPos=fl.reduce((s,f)=>f.accounts.reduce((ss,a)=>ss+a.positions.length,0)+s,0);
-
-    html+=`<div class="section-label">${meta.flag} ${meta.label}</div>
+  Object.entries(META).forEach(([key, meta]) => {
+    const fl = state.files[key], has = fl.length > 0;
+    const totalPos = fl.reduce((s,f) => f.accounts.reduce((ss,a) => ss+a.positions.length, 0)+s, 0);
+    html += `<div class="section-label">${meta.flag} ${meta.label}</div>
     <div class="card">
       <div class="platform-header">
         <div class="platform-icon" style="background:${meta.bg}">${meta.flag}</div>
@@ -661,297 +722,359 @@ function renderImport(){
           <div class="platform-title">${meta.label}</div>
           <div class="platform-sub">${key==='td_canada'?'USD & CAD auto-detected':'All values in USD'}</div>
         </div>
-        ${has?`<div class="platform-badge"><span class="badge badge-green">✓ ${totalPos} positions</span></div>`:''}
+        ${has ? `<div class="platform-badge"><span class="badge badge-green">✓ ${totalPos} positions</span></div>` : ''}
       </div>
       <div class="drop-zone-wrap">
-        <label class="drop-zone" id="dz-${key}">
+        <label class="drop-zone">
           <input type="file" accept=".csv,.txt" multiple data-key="${key}" onchange="handleFiles(this)"/>
           <div class="drop-zone-icon">${has?'➕':'📂'}</div>
           <div class="drop-zone-text">${has?'Add more CSV files':'Select CSV file'}</div>
         </label>
       </div>`;
 
-    if(has){
-      html+=`<div class="file-list">`;
-      fl.forEach((f,fi)=>{
-        const names=f.accounts.map(a=>(a.currency!=='USD'?a.name+` (${a.currency})`:a.name)).join(', ');
-        html+=`<div class="file-row">
+    if (has) {
+      html += `<div class="file-list">`;
+      fl.forEach((f,fi) => {
+        const names = f.accounts.map(a => a.currency!=='USD' ? a.name+' ('+a.currency+')' : a.name).join(', ');
+        html += `<div class="file-row">
           <div class="file-icon">📄</div>
-          <div style="flex:1;min-width:0">
-            <div class="file-name">${f.name}</div>
-            <div class="file-accts">${names}</div>
-          </div>
+          <div style="flex:1;min-width:0"><div class="file-name">${f.name}</div><div class="file-accts">${names}</div></div>
           <button class="file-remove" onclick="removeFile('${key}',${fi})">✕</button>
         </div>`;
       });
-      html+=`</div>`;
-
-      const allAccts=fl.flatMap(f=>f.accounts);
-      if(allAccts.length){
-        html+=`<div class="acct-rows">`;
-        allAccts.forEach(acc=>{
-          const usd=acctUSD(acc),isCAD=acc.currency==='CAD';
-          html+=`<div class="acct-row">
-            <div>
-              <div class="acct-name">${acc.name}${isCAD?`<span class="cur-tag" style="background:${META.td_canada.bg};color:${META.td_canada.color}">CAD</span>`:''}</div>
-              <div class="acct-pos">${acc.positions.length} positions</div>
-            </div>
-            <div>
-              <div class="acct-bal">${fmtD(usd)}</div>
-              ${isCAD?`<div class="acct-sub">CA$${fmt(acc.balance)}</div>`:''}
-            </div>
-          </div>`;
-        });
-        html+=`</div>`;
-      }
+      html += `</div><div class="acct-rows">`;
+      fl.flatMap(f=>f.accounts).forEach(acc => {
+        const usd = acc.positions.reduce((s,p)=>s+toUSD(p.value,p.currency,acc.currency),0);
+        const isCAD = acc.currency==='CAD';
+        html += `<div class="acct-row">
+          <div>
+            <div class="acct-name">${acc.name}${isCAD?`<span class="cur-tag" style="background:${META.td_canada.bg};color:${META.td_canada.color}">CAD</span>`:''}</div>
+            <div class="acct-pos">${acc.positions.length} positions</div>
+          </div>
+          <div>
+            <div class="acct-bal">${fmtD(usd)}</div>
+            ${isCAD ? `<div class="acct-sub">CA$${fmt(acc.balance)}</div>` : ''}
+          </div>
+        </div>`;
+      });
+      html += `</div>`;
     }
 
-    html+=`<div class="guide">
+    html += `<div class="guide">
       <div class="guide-title">How to export</div>
       <ol>${GUIDES[key].map(s=>`<li>${s}</li>`).join('')}</ol>
-    </div></div>`;
-
-    html+=`<div id="status-${key}" class="import-status"></div>`;
+    </div></div><div id="status-${key}" class="import-status"></div>`;
   });
 
-  if(ld.length>0){
-    html+=`<div class="cta"><button class="cta-btn" onclick="setView('overview')">View Dashboard →</button></div>`;
-  }
-
-  html+=`</div>`; return html;
+  if (ld.length > 0) html += `<div class="cta"><button class="cta-btn" onclick="setView('overview')">View Dashboard →</button></div>`;
+  html += `</div>`;
+  return html;
 }
 
 // ── OVERVIEW ─────────────────────────────────────────────────
-function renderOverview(){
-  const ld=loaded();
-  if(!ld.length) return emptyState('📥','No data imported','Upload CSVs from your brokerages to see your consolidated portfolio.','import','Go to Import');
+function renderOverview() {
+  const ld = loaded();
+  if (!ld.length) return emptyState('📥','No data imported','Upload CSVs from your brokerages to see your consolidated portfolio.','import','Go to Import');
 
-  const total=getTotal(),allPos=getAllPositions(),allAccts=getAllAccounts();
-  const totalGain=allPos.reduce((s,p)=>s+p.usdGain,0);
-  const gainPct=total?(totalGain/(total-totalGain))*100:0;
+  const total    = getTotal();
+  const allPos   = getAllPositions();
+  const allAccts = getAllAccounts();
+  const totalGain = allPos.reduce((s,p) => s+p.totalGain, 0);
+  const gainPct   = (total-totalGain) ? (totalGain/(total-totalGain))*100 : 0;
 
-  const segs=ld.map(([k])=>{
-    const val=state.files[k].reduce((s,f)=>f.accounts.reduce((ss,a)=>ss+acctUSD(a),0)+s,0);
-    return {label:META[k].label,color:META[k].color,bg:META[k].bg,pct:total?(val/total)*100:0};
+  const segs = ld.map(([k]) => {
+    const val = getAllAccounts().filter(a=>a.pkey===k).reduce((s,a)=>s+a.positions.reduce((ss,p)=>ss+toUSD(p.value,p.currency,a.currency),0),0);
+    return { label:META[k].label, color:META[k].color, pct: total?(val/total)*100:0 };
+  });
+  const R=40, circ=2*Math.PI*R; let off=0, paths='';
+  segs.forEach(s => {
+    const d=(s.pct/100)*circ;
+    paths += `<circle cx="50" cy="50" r="${R}" fill="none" stroke="${s.color}" stroke-width="12" stroke-linecap="round"
+      stroke-dasharray="${Math.max(d-3,0)} ${circ-Math.max(d-3,0)}"
+      stroke-dashoffset="${-off-1.5}" transform="rotate(-90 50 50)"/>`;
+    off += d;
   });
 
-  const R=40,circ=2*Math.PI*R; let off=0,paths='';
-  const tot2=segs.reduce((s,x)=>s+x.pct,0)||1;
-  segs.forEach(s=>{ const d=(s.pct/tot2)*circ; paths+=`<circle cx="50" cy="50" r="${R}" fill="none" stroke="${s.color}" stroke-width="12" stroke-linecap="round" stroke-dasharray="${Math.max(d-3,0)} ${circ-Math.max(d-3,0)}" stroke-dashoffset="${-off-1.5}" transform="rotate(-90 50 50)"/>`; off+=d; });
+  const liveBtn = state.liveLoading
+    ? `<span style="font-size:12px;color:rgba(255,255,255,.7)">⟳ Updating…</span>`
+    : `<button onclick="fetchLivePrices()" style="background:rgba(255,255,255,.2);border:none;color:#fff;font-size:12px;font-weight:600;padding:4px 10px;border-radius:12px;cursor:pointer;">${state.liveLastFetched ? '⟳ '+state.liveLastFetched.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : '⟳ Live Prices'}</button>`;
 
-  let html=`<div class="page">
+  let html = `<div class="page">
   <div class="hero-card">
-    <div class="hero-label">Total Portfolio (USD)</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
+      <div class="hero-label">Total Portfolio (USD)</div>${liveBtn}
+    </div>
     <div class="hero-value">${fmtC(total)}</div>
     <div class="hero-row">
-      <span class="badge ${totalGain>=0?'badge-green':'badge-red'}" style="background:rgba(255,255,255,.2);color:#fff">${totalGain>=0?'▲':'▼'} ${fmtC(Math.abs(totalGain))} &nbsp;${totalGain>=0?'+':''}${fmt(gainPct,2)}%</span>
-      <span class="hero-sub">all-time gain</span>
+      <span class="badge" style="background:rgba(255,255,255,.2);color:#fff">${totalGain>=0?'▲':'▼'} ${fmtC(Math.abs(totalGain))} &nbsp;${fmtPct(gainPct)}</span>
+      <span class="hero-sub">all-time gain${state.liveLastFetched?' · live':' · from CSV'}</span>
     </div>
   </div>
   <div class="stats-strip">
     <div class="stat-tile"><div class="stat-label">Accounts</div><div class="stat-value" style="color:var(--teams-purple)">${allAccts.length}</div><div class="stat-sub">${ld.length} platform${ld.length!==1?'s':''}</div></div>
-    <div class="stat-tile"><div class="stat-label">Positions</div><div class="stat-value" style="color:var(--blue)">${allPos.length}</div><div class="stat-sub">unique holdings</div></div>
-    <div class="stat-tile"><div class="stat-label">Largest</div><div class="stat-value" style="color:var(--orange);font-size:17px">${allPos[0]?.symbol||'—'}</div><div class="stat-sub">${allPos[0]?fmtC(allPos[0].usdValue):'—'}</div></div>
+    <div class="stat-tile"><div class="stat-label">Holdings</div><div class="stat-value" style="color:var(--blue)">${allPos.length}</div><div class="stat-sub">unique symbols</div></div>
+    <div class="stat-tile"><div class="stat-label">Largest</div><div class="stat-value" style="color:var(--orange);font-size:16px">${allPos[0]?.symbol||'—'}</div><div class="stat-sub">${allPos[0]?fmtC(allPos[0].currentValue):'—'}</div></div>
   </div>
   <div class="donut-card">
     <div class="donut-card-title">Allocation by Platform</div>
     <div class="donut-layout">
-      <svg viewBox="0 0 100 100" width="110" height="110" style="flex-shrink:0"><circle cx="50" cy="50" r="40" fill="none" stroke="var(--border)" stroke-width="12"/>${paths}</svg>
-      <div class="donut-legend">${segs.map(s=>`<div class="donut-leg"><div class="donut-leg-row"><div class="donut-leg-dot" style="background:${s.color}"></div><div class="donut-leg-name">${s.label}</div><div class="donut-leg-pct">${fmt(s.pct,1)}%</div></div><div class="donut-bar" style="margin-left:18px"><div class="donut-bar-fill" style="background:${s.color};width:${s.pct}%"></div></div></div>`).join('')}</div>
+      <svg viewBox="0 0 100 100" width="110" height="110" style="flex-shrink:0">
+        <circle cx="50" cy="50" r="40" fill="none" stroke="var(--border)" stroke-width="12"/>${paths}
+      </svg>
+      <div class="donut-legend">
+        ${segs.map(s=>`<div class="donut-leg">
+          <div class="donut-leg-row"><div class="donut-leg-dot" style="background:${s.color}"></div><div class="donut-leg-name">${s.label}</div><div class="donut-leg-pct">${fmt(s.pct,1)}%</div></div>
+          <div class="donut-bar" style="margin-left:18px"><div class="donut-bar-fill" style="background:${s.color};width:${s.pct}%"></div></div>
+        </div>`).join('')}
+      </div>
     </div>
   </div>
-  <div class="section-label">Accounts</div><div class="card">`;
+  <div class="section-label">Accounts</div>
+  <div class="card">`;
 
-  ld.forEach(([key])=>{
-    const meta=META[key],accts=state.files[key].flatMap(f=>f.accounts);
-    const totalUSD=accts.reduce((s,a)=>s+acctUSD(a),0),isExp=state.expand===key;
-    html+=`<div class="platform-row" onclick="toggleExpand('${key}')">
+  ld.forEach(([key]) => {
+    const meta  = META[key];
+    const accts = getAllAccounts().filter(a=>a.pkey===key);
+    const total = accts.reduce((s,a)=>s+a.positions.reduce((ss,p)=>ss+toUSD(p.value,p.currency,a.currency),0),0);
+    const isExp = state.expandPlatform === key;
+    html += `<div class="platform-row" onclick="togglePlatform('${key}')">
       <div class="pl-icon" style="background:${meta.bg}">${meta.flag}</div>
-      <div class="pl-body"><div class="pl-name">${meta.label}</div><div class="pl-detail">${accts.length} account${accts.length!==1?'s':''} · ${accts.reduce((s,a)=>s+a.positions.length,0)} positions</div></div>
-      <div class="pl-right"><div class="pl-value">${fmtD(totalUSD)}</div></div>
+      <div class="pl-body">
+        <div class="pl-name">${meta.label}</div>
+        <div class="pl-detail">${accts.length} account${accts.length!==1?'s':''} · ${accts.reduce((s,a)=>s+a.positions.length,0)} positions</div>
+      </div>
+      <div class="pl-right"><div class="pl-value">${fmtD(total)}</div></div>
       <span class="chevron ${isExp?'open':''}">▼</span>
     </div>
-    ${isExp?accts.map(acc=>{const usd=acctUSD(acc),isCAD=acc.currency==='CAD';return `<div class="sub-acct-row"><div><div class="sub-acct-name">${acc.name}${isCAD?`<span class="cur-tag" style="background:${META.td_canada.bg};color:${META.td_canada.color}">CAD</span>`:''}</div><div style="font-size:12px;color:var(--text3);margin-top:1px">${acc.positions.length} positions</div></div><div style="text-align:right"><div class="sub-acct-val">${fmtD(usd)}</div>${isCAD?`<div class="sub-acct-sub">CA$${fmt(acc.balance)}</div>`:''}</div></div>`;}).join(''):''}`;
+    ${isExp ? accts.map(acc=>{
+      const usd=acc.positions.reduce((s,p)=>s+toUSD(p.value,p.currency,acc.currency),0);
+      const isCAD=acc.currency==='CAD';
+      return `<div class="sub-acct-row">
+        <div>
+          <div class="sub-acct-name">${acc.name}${isCAD?`<span class="cur-tag" style="background:${META.td_canada.bg};color:${META.td_canada.color}">CAD</span>`:''}</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:1px">${acc.positions.length} positions</div>
+        </div>
+        <div style="text-align:right">
+          <div class="sub-acct-val">${fmtD(usd)}</div>
+          ${isCAD?`<div class="sub-acct-sub">CA$${fmt(acc.balance)}</div>`:''}
+        </div>
+      </div>`;
+    }).join('') : ''}`;
   });
 
-  html+=`</div><div class="section-label">Top Holdings</div><div class="card">`;
-  allPos.slice(0,8).forEach((pos,i)=>{
-    const cost=pos.usdValue-pos.usdGain,pct=cost?(pos.usdGain/cost)*100:0;
-    const dots=pos.platforms.map(pl=>{const m=Object.values(META).find(x=>x.label===pl);return m?`<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${m.color};margin-right:3px"></span>`:''}).join('');
-    html+=`<div class="holding-row"><div class="h-num">${i+1}</div><div style="width:62px;flex-shrink:0"><div class="h-sym">${pos.symbol}</div><div style="margin-top:3px">${dots}</div></div><div class="h-name">${pos.name}</div><div class="h-right"><div class="h-val">${fmtD(pos.usdValue)}</div><div class="h-pct ${pct>=0?'pos':'neg'}">${pct>=0?'+':''}${fmt(pct,1)}%</div></div></div>`;
+  html += `</div><div class="section-label">Top Holdings</div><div class="card">`;
+  getAllPositions().sort((a,b)=>b.currentValue-a.currentValue).slice(0,8).forEach((pos,i) => {
+    const dots = pos.platforms.map(pl=>{const m=Object.values(META).find(x=>x.label===pl);return m?`<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${m.color};margin-right:3px"></span>`:''}).join('');
+    const daily = pos.dailyChangePct !== null ? `<span style="font-size:11px;color:${pos.dailyChangePct>=0?'var(--green)':'var(--red)'};margin-left:4px">${pos.dailyChangePct>=0?'▲':'▼'}${Math.abs(pos.dailyChangePct).toFixed(2)}%</span>` : '';
+    html += `<div class="holding-row">
+      <div class="h-num">${i+1}</div>
+      <div style="width:62px;flex-shrink:0"><div class="h-sym">${pos.symbol}</div><div style="margin-top:3px">${dots}</div></div>
+      <div class="h-name">${pos.liveName||pos.name}${daily}</div>
+      <div class="h-right">
+        <div class="h-val">${fmtD(pos.currentValue)}</div>
+        <div class="h-pct ${pctClass(pos.totalGainPct)}">${fmtPct(pos.totalGainPct)}</div>
+      </div>
+    </div>`;
   });
-  html+=`</div></div>`; return html;
+  html += `</div></div>`;
+  return html;
 }
 
 // ── HOLDINGS ─────────────────────────────────────────────────
-function renderHoldings(){
-  const ld=loaded();
-  if(!ld.length) return emptyState('📋','No data imported','Import your CSVs to see all holdings.','import','Go to Import');
-  const total=getTotal();
-  let allPos=getAllPositions();
-  if(state.sortBy==='gain')   allPos.sort((a,b)=>b.usdGain-a.usdGain);
-  if(state.sortBy==='symbol') allPos.sort((a,b)=>a.symbol.localeCompare(b.symbol));
+function renderHoldings() {
+  const ld = loaded();
+  if (!ld.length) return emptyState('📋','No data imported','Import your CSVs to see all holdings.','import','Go to Import');
+
+  const total  = getTotal();
+  const allPos = getSortedPositions();
+  const hasLive = Object.keys(state.livePrices).length > 0;
 
   return `<div class="page">
     <div style="display:flex;justify-content:space-between;align-items:baseline;padding:20px 16px 4px">
       <div style="font-size:24px;font-weight:700;letter-spacing:-.02em">${allPos.length} Holdings</div>
-      <div style="font-size:15px;font-weight:700;color:var(--teams-purple);font-variant-numeric:tabular-nums">${fmtC(total)}</div>
+      <div style="font-size:15px;font-weight:700;color:var(--teams-purple)">${fmtC(total)}</div>
     </div>
     <div class="seg-row">
-      ${['value','gain','symbol'].map(s=>`<button class="seg-btn${state.sortBy===s?' active':''}" onclick="setSort('${s}')">${s==='value'?'By Value':s==='gain'?'By Gain':'A – Z'}</button>`).join('')}
+      <button class="seg-btn${state.sortBy==='value'?' active':''}"       onclick="setSort('value')">Value</button>
+      <button class="seg-btn${state.sortBy==='gain'?' active':''}"        onclick="setSort('gain')">P&amp;L</button>
+      <button class="seg-btn${state.sortBy==='dailyChange'?' active':''}" onclick="setSort('dailyChange')">Today</button>
+      <button class="seg-btn${state.sortBy==='symbol'?' active':''}"      onclick="setSort('symbol')">A–Z</button>
     </div>
-    <div style="margin:12px 0 0"><div class="card" style="margin:0 16px">
-      ${allPos.map((pos,i)=>{
-        const cost=pos.usdValue-pos.usdGain,pct=cost?(pos.usdGain/cost)*100:0;
-        const dots=pos.platforms.map(pl=>{const m=Object.values(META).find(x=>x.label===pl);return m?`<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${m.color};margin-right:3px"></span>`:''}).join('');
-        return `<div class="holding-row"><div class="h-num">${i+1}</div><div style="width:62px;flex-shrink:0"><div class="h-sym">${pos.symbol.length<=5?pos.symbol:pos.symbol.slice(0,5)}</div><div style="margin-top:3px">${dots}</div></div><div class="h-name">${pos.name}</div><div class="h-right"><div class="h-val">${fmtD(pos.usdValue)}</div><div class="h-pct ${pct>=0?'pos':'neg'}">${pct>=0?'+':''}${fmt(pct,1)}%</div></div></div>`;
-      }).join('')}
-    </div></div>
+    <div style="margin:12px 0 0">
+      <div class="card" style="margin:0 16px">
+        ${allPos.map((pos,i) => renderHoldingRow(pos, i+1, total)).join('')}
+      </div>
+    </div>
   </div>`;
 }
 
+function renderHoldingRow(pos, rank, total) {
+  const isExp = state.expandedHolding === pos.symbol;
+  const portPct = total ? (pos.currentValue/total*100) : 0;
+  const dots = pos.platforms.map(pl=>{
+    const m=Object.values(META).find(x=>x.label===pl);
+    return m?`<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${m.color};margin-right:3px"></span>`:'';
+  }).join('');
+
+  // Summary row
+  let html = `<div class="holding-row" onclick="toggleHolding('${pos.symbol}')" style="cursor:pointer">
+    <div class="h-num">${rank}</div>
+    <div style="width:58px;flex-shrink:0">
+      <div class="h-sym">${pos.symbol.length<=5?pos.symbol:pos.symbol.slice(0,5)}</div>
+      <div style="margin-top:3px">${dots}</div>
+    </div>
+    <div style="flex:1;min-width:0">
+      <div style="font-size:13px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${pos.liveName||pos.name}</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:2px">${fmt(portPct,1)}% of portfolio</div>
+    </div>
+    <div style="text-align:right;flex-shrink:0">
+      <div style="font-size:14px;font-weight:600;font-variant-numeric:tabular-nums">${fmtD(pos.currentValue)}</div>
+      <div style="font-size:12px;margin-top:1px;font-variant-numeric:tabular-nums" class="${pctClass(pos.totalGainPct)}">${fmtPct(pos.totalGainPct)}</div>
+    </div>
+    <div style="width:16px;flex-shrink:0;text-align:right;color:var(--text3);font-size:11px;margin-left:4px">${isExp?'▲':'▼'}</div>
+  </div>`;
+
+  // Expanded detail panel
+  if (isExp) {
+    const liveTag = pos.isLive
+      ? `<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--green-bg);color:var(--green);margin-left:6px">LIVE</span>`
+      : `<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--orange-bg);color:var(--orange);margin-left:6px">CSV</span>`;
+
+    const rows = [
+      // Quantity
+      ['Shares / Units',   pos.shares > 0 ? fmt(pos.shares, pos.shares % 1 === 0 ? 0 : 4) : '—'],
+      // Price
+      ['Current Price',    pos.isLive
+          ? fmtD(pos.livePrice) + ' ' + (pos.currency!=='USD'?pos.currency:'')
+          : pos.csvPrice ? fmtD(pos.csvPrice) + ' (CSV)' : '—'],
+      // Daily change — only if live
+      pos.dailyChange !== null
+          ? ['Today\'s Change',  `<span class="${pctClass(pos.dailyChangePct)}">${fmtD(pos.dailyChange)} (${fmtPct(pos.dailyChangePct)})</span>`]
+          : null,
+      // Current value
+      ['Market Value',     fmtD(pos.currentValue)],
+      // Cost basis
+      ['Cost Basis (est)', fmtD(pos.costBasis)],
+      // Total P&L
+      ['Total P&L',        `<span class="${pctClass(pos.totalGain)}">${fmtD(pos.totalGain)} (${fmtPct(pos.totalGainPct)})</span>`],
+      // Platforms
+      ['Held at',          pos.platforms.join(', ')],
+    ].filter(Boolean);
+
+    html += `<div style="background:var(--surface2);border-top:1px solid var(--border);padding:12px 16px 14px">
+      <div style="display:flex;align-items:center;margin-bottom:10px">
+        <div style="font-size:13px;font-weight:700;color:var(--teams-purple)">${pos.symbol}</div>
+        ${liveTag}
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 12px">
+        ${rows.map(([label, val]) => `
+          <div style="background:var(--surface);border-radius:8px;padding:9px 11px;box-shadow:var(--shadow-sm)">
+            <div style="font-size:11px;color:var(--text3);margin-bottom:3px">${label}</div>
+            <div style="font-size:14px;font-weight:600;font-variant-numeric:tabular-nums">${val}</div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+  }
+
+  return html;
+}
+
 // ── AI BRIEFING ───────────────────────────────────────────────
-function renderBriefing(){
-  const ld=loaded();
-  const today=todayStr();
-  const b=state.briefing;
+function renderBriefing() {
+  const ld = loaded();
+  const b  = state.briefing;
   const isToday = b && new Date(b.generatedAt).toDateString()===new Date().toDateString();
 
-  let html=`<div class="page">
+  let html = `<div class="page">
   <div class="briefing-hero">
-    <div class="briefing-date">${today}</div>
+    <div class="briefing-date">${todayStr()}</div>
     <div class="briefing-title">AI Daily Briefing</div>
     <div class="briefing-sub">Personalized news & insights for your portfolio</div>
   </div>`;
 
-
-
-  if(!ld.length){
-    html+=`<div style="margin:12px 16px 0;background:var(--orange-bg);border-radius:var(--radius);padding:14px 16px;font-size:14px;color:var(--text)">
-      ⚠️ Import your portfolio data first so the AI knows which positions to research.
-    </div>`;
+  if (!ld.length) {
+    html += `<div style="margin:12px 16px 0;background:var(--orange-bg);border-radius:var(--radius);padding:14px 16px;font-size:14px">⚠️ Import your portfolio data first.</div>`;
   } else {
-    // Refresh button
-    const btnLabel = state.briefingLoading ? '⏳ Searching the web & generating...' : isToday ? '🔄 Refresh Today\'s Briefing' : '✦ Generate Today\'s Briefing';
-    html+=`<div style="padding:0 16px">
-      <button class="refresh-btn" onclick="generateBriefing()" ${state.briefingLoading?'disabled':''}>
-        ${btnLabel}
-      </button>
+    const btnLabel = state.briefingLoading ? '⏳ Searching the web…' : isToday ? '🔄 Refresh Briefing' : '✦ Generate Today\'s Briefing';
+    html += `<div style="padding:0 16px">
+      <button class="refresh-btn" onclick="generateBriefing()" ${state.briefingLoading?'disabled':''}>${btnLabel}</button>
     </div>`;
   }
 
-  // Loading state
-  if(state.briefingLoading){
-    html+=`<div class="loading-card">
+  if (state.briefingLoading) {
+    html += `<div class="loading-card">
       <div class="loading-spinner">⟳</div>
       <div class="loading-text">Researching your portfolio…</div>
       <div class="loading-sub">Searching for today's news on your holdings</div>
-      <div class="loading-steps">
-        <div class="loading-step done">✓ Portfolio positions extracted</div>
-        <div class="loading-step active">⟳ Searching web for news on your holdings…</div>
-        <div class="loading-step">◦ Generating personalized insights</div>
-      </div>
     </div>`;
   }
-
-  // Error
-  if(state.briefingError){
-    html+=`<div style="margin:12px 16px 0;background:var(--red-bg);border-radius:var(--radius);padding:14px 16px">
+  if (state.briefingError) {
+    html += `<div style="margin:12px 16px 0;background:var(--red-bg);border-radius:var(--radius);padding:14px 16px">
       <div style="font-size:14px;font-weight:600;color:var(--red);margin-bottom:4px">Generation failed</div>
       <div style="font-size:13px;color:var(--text)">${state.briefingError}</div>
     </div>`;
   }
-
-  // Briefing content
-  if(b && !state.briefingLoading){
-    const freshness = isToday ? 'Generated today' : `Generated ${new Date(b.generatedAt).toLocaleDateString('en-US',{month:'short',day:'numeric'})}`;
-
-    // Summary
-    html+=`<div class="section-label">Market Summary</div>
+  if (b && !state.briefingLoading) {
+    const freshness = isToday ? 'Generated today' : 'Generated '+new Date(b.generatedAt).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    html += `<div class="section-label">Market Summary</div>
     <div class="briefing-content">
-      <div class="briefing-section">
-        <div class="briefing-section-title">Today's Overview</div>
-        <div class="briefing-section-body">${b.summary||''}</div>
-      </div>
-      ${b.sectorThemes?`<div class="briefing-section">
-        <div class="briefing-section-title">Sector Themes</div>
-        <div class="briefing-section-body">${b.sectorThemes}</div>
-      </div>`:''}
-      ${b.actionableInsights?`<div class="briefing-section">
-        <div class="briefing-section-title">Watch Out For</div>
-        <div class="briefing-section-body">${b.actionableInsights}</div>
-      </div>`:''}
+      <div class="briefing-section"><div class="briefing-section-title">Today's Overview</div><div class="briefing-section-body">${b.summary}</div></div>
+      ${b.sectorThemes?`<div class="briefing-section"><div class="briefing-section-title">Sector Themes</div><div class="briefing-section-body">${b.sectorThemes}</div></div>`:''}
+      ${b.actionableInsights?`<div class="briefing-section"><div class="briefing-section-title">Watch Out For</div><div class="briefing-section-body">${b.actionableInsights}</div></div>`:''}
     </div>`;
-
-    // News items per position
-    if(b.watchItems?.length){
-      html+=`<div class="section-label">Your Holdings in the News</div>
-      <div class="briefing-content">`;
-      b.watchItems.forEach(item=>{
-        const sentColor = item.sentiment==='positive'?'var(--green)':item.sentiment==='negative'?'var(--red)':'var(--text3)';
-        const sentBg    = item.sentiment==='positive'?'var(--green-bg)':item.sentiment==='negative'?'var(--red-bg)':'var(--border)';
-        const sentIcon  = item.sentiment==='positive'?'↑':item.sentiment==='negative'?'↓':'→';
-        html+=`<div class="news-item">
+    if (b.watchItems?.length) {
+      html += `<div class="section-label">Your Holdings in the News</div><div class="briefing-content">`;
+      b.watchItems.forEach(item => {
+        const sc=item.sentiment==='positive'?'var(--green)':item.sentiment==='negative'?'var(--red)':'var(--text3)';
+        const sb=item.sentiment==='positive'?'var(--green-bg)':item.sentiment==='negative'?'var(--red-bg)':'var(--border)';
+        const si=item.sentiment==='positive'?'↑':item.sentiment==='negative'?'↓':'→';
+        html += `<div class="news-item">
           <div class="news-ticker">${item.symbol} · ${item.name||''}</div>
           <div class="news-headline">${item.headline||''}</div>
           <div class="news-body">${item.detail||''}</div>
-          <span class="news-sentiment" style="background:${sentBg};color:${sentColor}">${sentIcon} ${item.sentiment}</span>
+          <span class="news-sentiment" style="background:${sb};color:${sc}">${si} ${item.sentiment}</span>
         </div>`;
       });
-      html+=`</div>`;
+      html += `</div>`;
     }
-
-    html+=`<div class="briefing-footer">⚡ ${freshness} · Powered by Claude with live web search<br>Not financial advice. Always do your own research.</div>`;
-  } else if(!b && !state.briefingLoading && !state.briefingError && ld.length){
-    html+=`<div style="margin:12px 16px 0;text-align:center;padding:28px 16px;background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow-sm)">
+    html += `<div class="briefing-footer">⚡ ${freshness} · Powered by Claude with live web search<br>Not financial advice. Always do your own research.</div>`;
+  } else if (!b && !state.briefingLoading && !state.briefingError && ld.length) {
+    html += `<div style="margin:12px 16px 0;text-align:center;padding:28px 16px;background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow-sm)">
       <div style="font-size:36px;margin-bottom:10px">✦</div>
-      <div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:6px">No briefing yet</div>
-      <div style="font-size:13px;color:var(--text2)">Tap "Generate" above to get today's AI-powered news summary for your holdings.</div>
+      <div style="font-size:15px;font-weight:600;margin-bottom:6px">No briefing yet</div>
+      <div style="font-size:13px;color:var(--text2)">Tap Generate above to get today's AI-powered news summary.</div>
     </div>`;
   }
-
-  html+=`</div>`; return html;
+  html += `</div>`;
+  return html;
 }
 
-function emptyState(icon,title,body,v,btn){
+function emptyState(icon,title,body,v,btn) {
   return `<div class="empty"><div class="empty-icon">${icon}</div><div class="empty-title">${title}</div><div class="empty-body">${body}</div><button class="empty-btn" onclick="setView('${v}')">${btn}</button></div>`;
 }
 
 // ════════════════════════════════════════════════════════════
 //  EVENTS
 // ════════════════════════════════════════════════════════════
-function setView(v){ state.view=v; render(); document.getElementById('main-content').scrollTop=0; }
-function setSort(s){ state.sortBy=s; render(); }
-function toggleExpand(key){ state.expand=state.expand===key?null:key; render(); }
+function setView(v)         { state.view=v; render(); document.getElementById('main-content').scrollTop=0; }
+function setSort(s)         { state.sortBy=s; render(); }
+function togglePlatform(k)  { state.expandPlatform = state.expandPlatform===k ? null : k; render(); }
+function toggleHolding(sym) { state.expandedHolding = state.expandedHolding===sym ? null : sym; render(); }
 
-function saveApiKey(){
-  const f=document.getElementById('api-key-field');
-  if(f) state.apiKey=f.value.trim();
-  saveToStorage();
-  // Brief visual feedback
-  const btn=document.querySelector('.api-key-save');
-  if(btn){ btn.textContent='✓ Saved'; setTimeout(()=>btn.textContent='Save',1500); }
-}
+function removeFile(key,idx) { state.files[key].splice(idx,1); saveToStorage(); render(); }
 
-function removeFile(key,idx){
-  state.files[key].splice(idx,1);
-  saveToStorage();
-  render();
-}
-
-function handleFiles(input){
-  const key=input.dataset.key,files=Array.from(input.files);
-  if(!files.length) return;
+function handleFiles(input) {
+  const key=input.dataset.key, files=Array.from(input.files);
+  if (!files.length) return;
   let done=0; const errors=[];
-  files.forEach(file=>{
-    const reader=new FileReader();
-    reader.onload=e=>{
-      try{ state.files[key].push({name:file.name,accounts:PARSERS[key](e.target.result)}); }
-      catch(err){ errors.push(`${file.name}: ${err.message}`); }
-      if(++done===files.length){
-        saveToStorage();
-        render();
-        if(errors.length){ const el=document.getElementById('status-'+key); if(el){el.style.color='var(--red)';el.textContent='Error: '+errors.join(' | ');} }
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      try { state.files[key].push({name:file.name, accounts:PARSERS[key](e.target.result)}); }
+      catch(err) { errors.push(file.name+': '+err.message); }
+      if (++done===files.length) {
+        saveToStorage(); render();
+        if (errors.length) { const el=document.getElementById('status-'+key); if(el){el.style.color='var(--red)';el.textContent='Error: '+errors.join(' | ');} }
       }
     };
     reader.readAsText(file);
@@ -962,9 +1085,13 @@ function handleFiles(input){
 //  BOOT
 // ════════════════════════════════════════════════════════════
 loadFromStorage();
-// If we have saved data, go straight to overview
-if(loaded().length > 0) state.view = 'overview';
-render();
+if (loaded().length > 0) {
+  state.view = 'overview';
+  render();
+  fetchLivePrices();
+} else {
+  render();
+}
 </script>
 </body>
 </html>
