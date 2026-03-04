@@ -589,11 +589,8 @@ async function fetchLivePrices() {
   render();
 
   try {
-    const yahooUrl = 'https://query1.finance.yahoo.com/v7/finance/quote?symbols='
-      + symbols.join(',')
-      + '&fields=regularMarketPrice,regularMarketChange,regularMarketChangePercent,regularMarketPreviousClose,currency,shortName';
-
-    const resp = await fetch(PROXY + '?url=' + encodeURIComponent(yahooUrl));
+    // Call our worker's dedicated /prices endpoint — worker fetches Yahoo with proper headers
+    const resp = await fetch(PROXY + 'prices?symbols=' + symbols.join(','));
     const data = await resp.json();
     const quotes = (data && data.quoteResponse && data.quoteResponse.result) || [];
 
